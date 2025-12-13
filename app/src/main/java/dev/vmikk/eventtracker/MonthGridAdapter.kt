@@ -10,6 +10,7 @@ import dev.vmikk.eventtracker.databinding.ItemCalendarDayBinding
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
+import android.widget.LinearLayout
 
 data class DayMarker(
     val colorArgb: Int? = null,
@@ -127,9 +128,14 @@ class MonthGridAdapter(
                     } else {
                         val color = m.colorArgb
                         if (color != null) {
+                            val size = dpToPx(14f)
+                            val margin = dpToPx(2f)
                             val dot = View(binding.root.context).apply {
                                 setBackgroundResource(R.drawable.bg_calendar_dot)
                                 background.setTint(color)
+                            }
+                            dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                                marginEnd = margin
                             }
                             binding.markerContainer.addView(dot)
                             shownIcons++
@@ -145,6 +151,12 @@ class MonthGridAdapter(
                         text = "✎"
                         textSize = 10f
                     }
+                    tv.layoutParams = LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    ).apply {
+                        marginEnd = dpToPx(2f)
+                    }
                     binding.markerContainer.addView(tv)
                     shownIcons++
                 }
@@ -158,6 +170,10 @@ class MonthGridAdapter(
             } else {
                 binding.countBadge.isVisible = false
             }
+        }
+
+        private fun dpToPx(dp: Float): Int {
+            return (dp * binding.root.resources.displayMetrics.density).toInt()
         }
     }
 }
