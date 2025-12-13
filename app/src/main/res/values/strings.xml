@@ -6,6 +6,35 @@
     <string name="second_fragment_label">Second Fragment</string>
     <string name="next">Next</string>
     <string name="previous">Previous</string>
+    <string name="previous_month">Previous month</string>
+    <string name="next_month">Next month</string>
+    <string name="settings_placeholder">Settings will be implemented next (event types, export, backups).</string>
+    <string name="day_events">Events</string>
+    <string name="custom_events">Custom events</string>
+    <string name="add_custom_event_hint">Add custom event</string>
+    <string name="add">Add</string>
+    <string name="no_custom_events">No custom events for this day.</string>
+    <string name="delete">Delete</string>
+    <string name="event_types">Event types</string>
+    <string name="add_event_type">Add event type</string>
+    <string name="edit_event_type">Edit event type</string>
+    <string name="event_name">Name</string>
+    <string name="event_emoji_optional">Emoji (optional)</string>
+    <string name="color">Color</string>
+    <string name="edit">Edit</string>
+    <string name="export">Export</string>
+    <string name="export_tsv">Export TSV</string>
+    <string name="backups">Backups</string>
+    <string name="connect_dropbox">Connect Dropbox</string>
+    <string name="backup_now">Backup now</string>
+    <string name="restore_latest">Restore latest</string>
+    <string name="daily_backup">Daily backup</string>
+    <string name="dropbox_app_key">PUT_YOUR_DROPBOX_APP_KEY_HERE</string>
+    <string name="dropbox_redirect_uri">dev.vmikk.eventtracker://oauth2redirect</string>
+    <string name="dropbox_connected">Dropbox connected</string>
+    <string name="dropbox_setup_instructions">Set your Dropbox app key in the string resource dropbox_app_key, and register redirect URI dev.vmikk.eventtracker://oauth2redirect in your Dropbox app settings.</string>
+    <string name="restore_warning">This will replace the local database with the latest Dropbox backup. Restart is recommended after restore.</string>
+    <string name="restore_done">Restore completed. Please fully close and reopen the app.</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
