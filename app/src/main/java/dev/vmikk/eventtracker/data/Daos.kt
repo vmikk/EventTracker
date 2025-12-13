@@ -6,6 +6,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import androidx.room.ColumnInfo
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -42,6 +43,27 @@ interface DayEventDao {
     )
     suspend fun getInRangeOnce(startEpochDay: Long, endEpochDay: Long): List<DayEventEntity>
 
+    data class EventTypeCountRow(
+        @ColumnInfo(name = "event_type_id")
+        val eventTypeId: String,
+        @ColumnInfo(name = "name")
+        val name: String,
+        @ColumnInfo(name = "cnt")
+        val cnt: Int,
+    )
+
+    @Query(
+        """
+        SELECT de.event_type_id AS event_type_id, et.name AS name, COUNT(*) AS cnt
+        FROM day_events de
+        JOIN event_types et ON et.id = de.event_type_id
+        WHERE de.date_epoch_day BETWEEN :startEpochDay AND :endEpochDay
+        GROUP BY de.event_type_id, et.name
+        ORDER BY et.sort_order ASC, et.name ASC
+        """
+    )
+    suspend fun countByEventTypeInRangeOnce(startEpochDay: Long, endEpochDay: Long): List<EventTypeCountRow>
+
     @Query("SELECT * FROM day_events")
     suspend fun getAllOnce(): List<DayEventEntity>
 }
@@ -59,6 +81,23 @@ interface CustomEventDao {
 
     @Query("SELECT * FROM custom_events WHERE date_epoch_day BETWEEN :startEpochDay AND :endEpochDay")
     suspend fun listInRangeOnce(startEpochDay: Long, endEpochDay: Long): List<CustomEventEntity>
+
+    data class CustomTextCountRow(
+        @ColumnInfo(name = "text")
+        val text: String,
+        @ColumnInfo(name = "cnt")
+        val cnt: Int,
+    )
+
+    @Query(
+        """
+        SELECT text AS text, COUNT(*) AS cnt
+        FROM custom_events
+        WHERE date_epoch_day BETWEEN :startEpochDay AND :endEpochDay
+        GROUP BY text
+        """
+    )
+    suspend fun countByTextInRangeOnce(startEpochDay: Long, endEpochDay: Long): List<CustomTextCountRow>
 
     @Query("SELECT * FROM custom_events")
     suspend fun getAllOnce(): List<CustomEventEntity>

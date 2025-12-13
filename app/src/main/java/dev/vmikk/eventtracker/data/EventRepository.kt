@@ -149,6 +149,42 @@ class EventRepository(
         }
     }
 
+    data class SummaryCounts(
+        val eventTypeCounts: List<DayEventDao.EventTypeCountRow>,
+        val customTextCounts: List<Pair<String, Int>>,
+    )
+
+    suspend fun getSummaryCounts(start: LocalDate, end: LocalDate): SummaryCounts {
+        val startEpoch = start.toEpochDay()
+        val endEpoch = end.toEpochDay()
+
+        val eventTypeCounts = db.dayEventDao().countByEventTypeInRangeOnce(startEpoch, endEpoch)
+        val rawTextCounts = db.customEventDao().countByTextInRangeOnce(startEpoch, endEpoch)
+
+        // Normalize by trim + case-insensitive.
+        val normalized = LinkedHashMap<String, Pair<String, Int>>() // key -> (displayText, count)
+        for (row in rawTextCounts) {
+            val trimmed = row.text.trim()
+            if (trimmed.isBlank()) continue
+            val key = trimmed.lowercase()
+            val existing = normalized[key]
+            if (existing == null) {
+                normalized[key] = trimmed to row.cnt
+            } else {
+                normalized[key] = existing.first to (existing.second + row.cnt)
+            }
+        }
+
+        val customTextCounts = normalized.values
+            .map { it.first to it.second }
+            .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first })
+
+        return SummaryCounts(
+            eventTypeCounts = eventTypeCounts,
+            customTextCounts = customTextCounts,
+        )
+    }
+
     companion object {
         fun from(context: Context): EventRepository =
             EventRepository(AppDatabase.getInstance(context))
