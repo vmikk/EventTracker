@@ -16,12 +16,20 @@ data class DayMarker(
     val emoji: String? = null,
 )
 
+data class DayCellData(
+    val eventTypeMarkers: List<DayMarker> = emptyList(),
+    val customEventCount: Int = 0,
+)
+
 class MonthGridAdapter(
     private val onDateClick: (LocalDate) -> Unit,
-    private val markersForDate: (LocalDate) -> List<DayMarker>,
+    private val dayCellForDate: (LocalDate) -> DayCellData,
 ) : RecyclerView.Adapter<MonthGridAdapter.DayViewHolder>() {
 
     private var cells: List<LocalDate?> = emptyList()
+
+    var maxMarkersPerDay: Int = 3
+    var cellHeightPx: Int? = null
 
     fun submitMonth(month: YearMonth) {
         cells = buildCells(month)
@@ -61,6 +69,7 @@ class MonthGridAdapter(
         fun bind(date: LocalDate?) {
             binding.dayNumber.isVisible = date != null
             binding.markerContainer.isVisible = date != null
+            binding.countBadge.isVisible = false
             binding.root.isClickable = date != null
             binding.root.isFocusable = date != null
 
@@ -71,40 +80,89 @@ class MonthGridAdapter(
                 return
             }
 
+            // Allow CalendarFragment to control cell height on tall screens.
+            val desiredHeight = cellHeightPx
+            if (desiredHeight != null) {
+                val lp = binding.root.layoutParams
+                if (lp != null && lp.height != desiredHeight) {
+                    lp.height = desiredHeight
+                    binding.root.layoutParams = lp
+                }
+            }
+
             binding.dayNumber.text = date.dayOfMonth.toString()
             binding.root.setOnClickListener { onDateClick(date) }
 
-            val markers = markersForDate(date)
-            renderMarkers(markers)
+            val cell = dayCellForDate(date)
+            renderCell(cell)
         }
 
-        private fun renderMarkers(markers: List<DayMarker>) {
+        private fun renderCell(cell: DayCellData) {
             binding.markerContainer.removeAllViews()
-            if (markers.isEmpty()) return
+            val eventTypeMarkers = cell.eventTypeMarkers
+            val customCount = cell.customEventCount
+            val totalCount = eventTypeMarkers.size + customCount
+            if (totalCount <= 0) return
 
-            val emoji = markers.firstNotNullOfOrNull { it.emoji?.takeIf { e -> e.isNotBlank() } }
-            if (emoji != null) {
-                val tv = TextView(binding.root.context).apply {
-                    text = emoji
-                    textSize = 12f
+            // Icons shown inside the cell: up to maxMarkersPerDay.
+            // - Event types: show emoji if present, otherwise a colored dot.
+            // - Custom events: if there are any event-type markers and there is remaining
+            //   space, show a neutral marker per custom entry up to remaining capacity.
+            // - If the day has ONLY custom events, we intentionally show NO icons here
+            //   (only the count badge).
+            val maxIcons = maxMarkersPerDay.coerceAtLeast(0)
+
+            var shownIcons = 0
+            if (eventTypeMarkers.isNotEmpty() && maxIcons > 0) {
+                for (m in eventTypeMarkers) {
+                    if (shownIcons >= maxIcons) break
+                    val emoji = m.emoji?.takeIf { it.isNotBlank() }
+                    if (emoji != null) {
+                        val tv = TextView(binding.root.context).apply {
+                            text = emoji
+                            textSize = 12f
+                        }
+                        binding.markerContainer.addView(tv)
+                        shownIcons++
+                    } else {
+                        val color = m.colorArgb
+                        if (color != null) {
+                            val dot = View(binding.root.context).apply {
+                                setBackgroundResource(R.drawable.bg_calendar_dot)
+                                background.setTint(color)
+                            }
+                            binding.markerContainer.addView(dot)
+                            shownIcons++
+                        }
+                    }
                 }
-                binding.markerContainer.addView(tv)
-                return
             }
 
-            // Dots: show up to 3 for cleanliness
-            val dotMarkers = markers.mapNotNull { it.colorArgb }.distinct().take(3)
-            dotMarkers.forEach { color ->
-                val dot = View(binding.root.context).apply {
-                    setBackgroundResource(R.drawable.bg_calendar_dot)
-                    background.setTint(color)
+            val remaining = (maxIcons - shownIcons).coerceAtLeast(0)
+            if (eventTypeMarkers.isNotEmpty() && customCount > 0 && remaining > 0) {
+                repeat(minOf(customCount, remaining)) {
+                    val tv = TextView(binding.root.context).apply {
+                        text = "✎"
+                        textSize = 10f
+                    }
+                    binding.markerContainer.addView(tv)
+                    shownIcons++
                 }
-                binding.markerContainer.addView(dot)
+            }
+
+            val showBadge =
+                (eventTypeMarkers.isEmpty() && customCount > 0) || (totalCount > shownIcons)
+            if (showBadge) {
+                binding.countBadge.text = totalCount.toString()
+                binding.countBadge.isVisible = true
+            } else {
+                binding.countBadge.isVisible = false
             }
         }
     }
 }
 
 private fun DayOfWeek.isoIndex(): Int = value // Monday=1 ... Sunday=7
+
 
 

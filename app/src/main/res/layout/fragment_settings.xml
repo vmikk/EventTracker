@@ -48,6 +48,35 @@
             app:layout_constraintTop_toBottomOf="@id/event_type_list" />
 
         <TextView
+            android:id="@+id/calendar_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="@string/calendar"
+            android:textAppearance="?attr/textAppearanceTitleMedium"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/divider1" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendar_max_markers"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="@string/calendar_max_markers"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/calendar_title" />
+
+        <View
+            android:id="@+id/divider_calendar"
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:background="?android:attr/listDivider"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/calendar_max_markers" />
+
+        <TextView
             android:id="@+id/export_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -55,7 +84,7 @@
             android:text="@string/export"
             android:textAppearance="?attr/textAppearanceTitleMedium"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/divider1" />
+            app:layout_constraintTop_toBottomOf="@id/divider_calendar" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/export_tsv"

@@ -13,6 +13,7 @@
     <string name="custom_events">Custom events</string>
     <string name="add_custom_event_hint">Add custom event</string>
     <string name="add">Add</string>
+    <string name="add_today">Add event for today</string>
     <string name="no_custom_events">No custom events for this day.</string>
     <string name="delete">Delete</string>
     <string name="event_types">Event types</string>
@@ -24,6 +25,9 @@
     <string name="edit">Edit</string>
     <string name="export">Export</string>
     <string name="export_tsv">Export TSV</string>
+    <string name="calendar">Calendar</string>
+    <string name="calendar_max_markers">Max markers per day</string>
+    <string name="calendar_max_markers_value">Max markers per day: %1$d</string>
     <string name="backups">Backups</string>
     <string name="connect_dropbox">Connect Dropbox</string>
     <string name="backup_now">Backup now</string>

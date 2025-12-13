@@ -4,7 +4,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.os.bundleOf
 import androidx.lifecycle.lifecycleScope
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
@@ -18,6 +17,7 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import android.content.Context
 
 class CalendarFragment : Fragment() {
 
@@ -27,7 +27,10 @@ class CalendarFragment : Fragment() {
     private var currentMonth: YearMonth = YearMonth.now()
 
     private lateinit var adapter: MonthGridAdapter
-    private val markerCache: MutableMap<LocalDate, List<DayMarker>> = mutableMapOf()
+    private val markerCache: MutableMap<LocalDate, DayCellData> = mutableMapOf()
+    private val prefs by lazy { requireContext().getSharedPreferences("prefs", Context.MODE_PRIVATE) }
+    private var baseGridPaddingTop: Int = 0
+    private var baseGridPaddingBottom: Int = 0
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -54,11 +57,14 @@ class CalendarFragment : Fragment() {
             onDateClick = { date ->
                 DayEventsBottomSheet.show(parentFragmentManager, date)
             },
-            markersForDate = { date -> markerCache[date].orEmpty() }
+            dayCellForDate = { date -> markerCache[date] ?: DayCellData() }
         )
+        adapter.maxMarkersPerDay = prefs.getInt(SettingsFragment.KEY_CALENDAR_MAX_MARKERS, 3)
 
         binding.monthGrid.layoutManager = GridLayoutManager(requireContext(), 7)
         binding.monthGrid.adapter = adapter
+        baseGridPaddingTop = binding.monthGrid.paddingTop
+        baseGridPaddingBottom = binding.monthGrid.paddingBottom
 
         binding.prevMonth.setOnClickListener {
             currentMonth = currentMonth.minusMonths(1)
@@ -69,6 +75,10 @@ class CalendarFragment : Fragment() {
             currentMonth = currentMonth.plusMonths(1)
             renderMonth()
             lifecycleScope.launch { loadMonthMarkers(repo) }
+        }
+
+        binding.addTodayFab.setOnClickListener {
+            DayEventsBottomSheet.show(parentFragmentManager, LocalDate.now())
         }
 
         renderMonth()
@@ -94,6 +104,57 @@ class CalendarFragment : Fragment() {
         binding.monthTitle.text = monthTitle
 
         adapter.submitMonth(currentMonth)
+        applyGridSizing()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        val newMax = prefs.getInt(SettingsFragment.KEY_CALENDAR_MAX_MARKERS, 3)
+        if (adapter.maxMarkersPerDay != newMax) {
+            adapter.maxMarkersPerDay = newMax
+            adapter.notifyDataSetChanged()
+        }
+        applyGridSizing()
+    }
+
+    private fun applyGridSizing() {
+        // Post so monthGrid has a measured height.
+        binding.monthGrid.post {
+            val rows = monthRowCount(currentMonth)
+            val availableHeight = binding.monthGrid.height - baseGridPaddingTop - baseGridPaddingBottom
+            if (rows <= 0 || availableHeight <= 0) return@post
+
+            val minCellHeightPx = dpToPx(56f)
+            val maxCellHeightPx = dpToPx(80f)
+            val idealCellHeightPx = (availableHeight / rows).coerceIn(minCellHeightPx, maxCellHeightPx)
+
+            if (adapter.cellHeightPx != idealCellHeightPx) {
+                adapter.cellHeightPx = idealCellHeightPx
+                adapter.notifyDataSetChanged()
+            }
+
+            val used = idealCellHeightPx * rows
+            val extra = (availableHeight - used).coerceAtLeast(0)
+            val addTop = extra / 2
+            val addBottom = extra - addTop
+            binding.monthGrid.setPadding(
+                binding.monthGrid.paddingLeft,
+                baseGridPaddingTop + addTop,
+                binding.monthGrid.paddingRight,
+                baseGridPaddingBottom + addBottom
+            )
+        }
+    }
+
+    private fun monthRowCount(month: YearMonth): Int {
+        val first = month.atDay(1)
+        val totalDays = month.lengthOfMonth()
+        val leadingBlanks = ((first.dayOfWeek.value - 1) + 7) % 7 // Monday-start
+        return ((leadingBlanks + totalDays + 6) / 7).coerceAtLeast(1)
+    }
+
+    private fun dpToPx(dp: Float): Int {
+        return (dp * resources.displayMetrics.density).toInt()
     }
 
     override fun onDestroyView() {

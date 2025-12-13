@@ -35,6 +35,7 @@ class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
     private val repo by lazy { EventRepository.from(requireContext()) }
+    private val prefs by lazy { requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
 
     private lateinit var adapter: EventTypeAdapter
 
@@ -64,11 +65,35 @@ class SettingsFragment : Fragment() {
             }
         }
 
-        val prefs = requireContext().getSharedPreferences("prefs", Context.MODE_PRIVATE)
         binding.dailyBackupSwitch.isChecked = prefs.getBoolean("daily_backup_enabled", false)
         binding.dailyBackupSwitch.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit().putBoolean("daily_backup_enabled", isChecked).apply()
             DropboxBackupScheduler.setDailyEnabled(requireContext(), isChecked)
+        }
+
+        fun renderCalendarMaxMarkers() {
+            val n = prefs.getInt(KEY_CALENDAR_MAX_MARKERS, DEFAULT_CALENDAR_MAX_MARKERS)
+            binding.calendarMaxMarkers.text = getString(R.string.calendar_max_markers_value, n)
+        }
+
+        renderCalendarMaxMarkers()
+        binding.calendarMaxMarkers.setOnClickListener {
+            val options = (1..6).map { it.toString() }.toTypedArray()
+            val current = (prefs.getInt(KEY_CALENDAR_MAX_MARKERS, DEFAULT_CALENDAR_MAX_MARKERS) - 1)
+                .coerceIn(0, options.lastIndex)
+            var selected = current
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.calendar_max_markers)
+                .setSingleChoiceItems(options, current) { _, which ->
+                    selected = which
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    prefs.edit().putInt(KEY_CALENDAR_MAX_MARKERS, selected + 1).apply()
+                    renderCalendarMaxMarkers()
+                }
+                .show()
         }
 
         binding.connectDropbox.setOnClickListener {
@@ -126,6 +151,9 @@ class SettingsFragment : Fragment() {
         val linked = DropboxAuthManager.isLinked(requireContext())
         binding.connectDropbox.isEnabled = !linked
         binding.connectDropbox.text = if (linked) getString(R.string.dropbox_connected) else getString(R.string.connect_dropbox)
+
+        val n = prefs.getInt(KEY_CALENDAR_MAX_MARKERS, DEFAULT_CALENDAR_MAX_MARKERS)
+        binding.calendarMaxMarkers.text = getString(R.string.calendar_max_markers_value, n)
     }
 
     private fun shareFile(file: java.io.File) {
@@ -202,6 +230,12 @@ class SettingsFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        private const val PREFS_NAME = "prefs"
+        const val KEY_CALENDAR_MAX_MARKERS = "calendar_max_markers"
+        private const val DEFAULT_CALENDAR_MAX_MARKERS = 3
     }
 }
 

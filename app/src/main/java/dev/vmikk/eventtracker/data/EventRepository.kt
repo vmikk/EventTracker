@@ -1,6 +1,7 @@
 package dev.vmikk.eventtracker.data
 
 import android.content.Context
+import dev.vmikk.eventtracker.DayCellData
 import dev.vmikk.eventtracker.DayMarker
 import java.time.LocalDate
 import java.time.YearMonth
@@ -121,22 +122,30 @@ class EventRepository(
     suspend fun listCustomEventsOnce(date: LocalDate): List<CustomEventEntity> =
         db.customEventDao().listByDateOnce(date.toEpochDay())
 
-    suspend fun getMonthMarkers(month: YearMonth): Map<LocalDate, List<DayMarker>> {
+    suspend fun getMonthMarkers(month: YearMonth): Map<LocalDate, DayCellData> {
         val start = month.atDay(1)
         val end = month.atEndOfMonth()
 
         val eventTypes = db.eventTypeDao().getActiveOnce().associateBy { it.id }
         val dayEvents = db.dayEventDao().getInRangeOnce(start.toEpochDay(), end.toEpochDay())
+        val customEvents = db.customEventDao().listInRangeOnce(start.toEpochDay(), end.toEpochDay())
 
-        val byDate = dayEvents.groupBy { LocalDate.ofEpochDay(it.dateEpochDay) }
-        return byDate.mapValues { (_, events) ->
-            events.mapNotNull { ev ->
+        val dayEventsByDate = dayEvents.groupBy { LocalDate.ofEpochDay(it.dateEpochDay) }
+        val customCountByDate = customEvents.groupingBy { LocalDate.ofEpochDay(it.dateEpochDay) }.eachCount()
+
+        val allDates = (dayEventsByDate.keys + customCountByDate.keys).toSet()
+        return allDates.associateWith { date ->
+            val eventTypeMarkers: List<DayMarker> = dayEventsByDate[date].orEmpty().mapNotNull { ev ->
                 val type = eventTypes[ev.eventTypeId] ?: return@mapNotNull null
                 DayMarker(
                     colorArgb = type.colorArgb,
                     emoji = type.emoji,
                 )
             }
+            DayCellData(
+                eventTypeMarkers = eventTypeMarkers,
+                customEventCount = customCountByDate[date] ?: 0,
+            )
         }
     }
 
