@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import dev.vmikk.eventtracker.databinding.ItemCalendarDayBinding
@@ -107,10 +108,7 @@ class MonthGridAdapter(
 
             // Icons shown inside the cell: up to maxMarkersPerDay.
             // - Event types: show emoji if present, otherwise a colored dot.
-            // - Custom events: if there are any event-type markers and there is remaining
-            //   space, show a neutral marker per custom entry up to remaining capacity.
-            // - If the day has ONLY custom events, we intentionally show NO icons here
-            //   (only the count badge).
+            // - Custom events: show a single grey circle marker if there are custom events and space.
             val maxIcons = maxMarkersPerDay.coerceAtLeast(0)
 
             var shownIcons = 0
@@ -144,26 +142,23 @@ class MonthGridAdapter(
                 }
             }
 
+            // Show grey circle for custom events if there are any and space
             val remaining = (maxIcons - shownIcons).coerceAtLeast(0)
-            if (eventTypeMarkers.isNotEmpty() && customCount > 0 && remaining > 0) {
-                repeat(minOf(customCount, remaining)) {
-                    val tv = TextView(binding.root.context).apply {
-                        text = "✎"
-                        textSize = 10f
-                    }
-                    tv.layoutParams = LinearLayout.LayoutParams(
-                        ViewGroup.LayoutParams.WRAP_CONTENT,
-                        ViewGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        marginEnd = dpToPx(2f)
-                    }
-                    binding.markerContainer.addView(tv)
-                    shownIcons++
+            if (customCount > 0 && remaining > 0) {
+                val size = dpToPx(14f)
+                val margin = dpToPx(2f)
+                val greyDot = View(binding.root.context).apply {
+                    setBackgroundResource(R.drawable.bg_calendar_dot)
+                    background.setTint(ContextCompat.getColor(binding.root.context, R.color.grey_500))
                 }
+                greyDot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                    marginEnd = margin
+                }
+                binding.markerContainer.addView(greyDot)
+                shownIcons++
             }
 
-            val showBadge =
-                (eventTypeMarkers.isEmpty() && customCount > 0) || (totalCount > shownIcons)
+            val showBadge = totalCount > shownIcons
             if (showBadge) {
                 binding.countBadge.text = totalCount.toString()
                 binding.countBadge.isVisible = true
