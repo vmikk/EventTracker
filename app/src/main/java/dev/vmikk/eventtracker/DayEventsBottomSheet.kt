@@ -54,10 +54,19 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
         binding.addCustomButton.setOnClickListener {
             val text = binding.customInput.text?.toString().orEmpty()
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) { repo.addCustomEvent(date, text) }
-                binding.customInput.setText("")
-                refresh()
-                notifyChanged()
+                val added = withContext(Dispatchers.IO) { repo.addCustomEvent(date, text) }
+                if (added) {
+                    binding.customInput.setText("")
+                    refresh()
+                    notifyChanged()
+                } else {
+                    // Show feedback for duplicate
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        getString(R.string.custom_event_duplicate),
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                    ).show()
+                }
             }
         }
 

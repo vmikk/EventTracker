@@ -112,9 +112,16 @@ class EventRepository(
     suspend fun getEnabledEventTypeIdsOnce(date: LocalDate): Set<String> =
         db.dayEventDao().getByDateOnce(date.toEpochDay()).map { it.eventTypeId }.toSet()
 
-    suspend fun addCustomEvent(date: LocalDate, text: String) {
+    suspend fun addCustomEvent(date: LocalDate, text: String): Boolean {
         val trimmed = text.trim()
-        if (trimmed.isBlank()) return
+        if (trimmed.isBlank()) return false
+
+        // Check if a custom event with the same text already exists for this date
+        val existingEvents = db.customEventDao().listByDateOnce(date.toEpochDay())
+        if (existingEvents.any { it.text.trim().equals(trimmed, ignoreCase = true) }) {
+            return false // Duplicate found, don't add
+        }
+
         db.customEventDao().insert(
             CustomEventEntity(
                 id = UUID.randomUUID().toString(),
@@ -123,6 +130,7 @@ class EventRepository(
                 createdAtEpochMs = System.currentTimeMillis(),
             )
         )
+        return true
     }
 
     suspend fun deleteCustomEvent(id: String) {
