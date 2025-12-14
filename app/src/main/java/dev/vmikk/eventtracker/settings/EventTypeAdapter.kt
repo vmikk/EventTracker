@@ -10,6 +10,7 @@ import dev.vmikk.eventtracker.databinding.ItemEventTypeBinding
 
 class EventTypeAdapter(
     private val onEdit: (EventTypeEntity) -> Unit,
+    private val onDelete: (EventTypeEntity) -> Unit,
 ) : ListAdapter<EventTypeEntity, EventTypeAdapter.VH>(DIFF) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -30,6 +31,7 @@ class EventTypeAdapter(
             binding.emoji.alpha = if (item.emoji.isNullOrBlank()) 0.3f else 1f
             binding.name.text = item.name
             binding.editButton.setOnClickListener { onEdit(item) }
+            binding.deleteButton.setOnClickListener { onDelete(item) }
         }
     }
 

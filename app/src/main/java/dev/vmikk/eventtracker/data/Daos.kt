@@ -25,6 +25,12 @@ interface EventTypeDao {
 
     @Update
     suspend fun update(eventType: EventTypeEntity)
+
+    @Query("SELECT COUNT(*) FROM day_events WHERE event_type_id = :eventTypeId")
+    suspend fun countUsage(eventTypeId: String): Int
+
+    @Query("DELETE FROM event_types WHERE id = :eventTypeId")
+    suspend fun deleteById(eventTypeId: String)
 }
 
 @Dao
@@ -66,6 +72,9 @@ interface DayEventDao {
 
     @Query("SELECT * FROM day_events")
     suspend fun getAllOnce(): List<DayEventEntity>
+
+    @Query("DELETE FROM day_events WHERE event_type_id = :eventTypeId")
+    suspend fun deleteByEventTypeId(eventTypeId: String)
 }
 
 @Dao

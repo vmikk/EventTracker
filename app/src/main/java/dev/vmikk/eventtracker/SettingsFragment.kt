@@ -51,7 +51,10 @@ class SettingsFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        adapter = EventTypeAdapter(onEdit = { eventType -> showEditDialog(eventType) })
+        adapter = EventTypeAdapter(
+            onEdit = { eventType -> showEditDialog(eventType) },
+            onDelete = { eventType -> showDeleteDialog(eventType) }
+        )
         binding.eventTypeList.layoutManager = LinearLayoutManager(requireContext())
         binding.eventTypeList.adapter = adapter
 
@@ -225,6 +228,33 @@ class SettingsFragment : Fragment() {
                 }
             }
             .show()
+    }
+
+    private fun showDeleteDialog(eventType: EventTypeEntity) {
+        lifecycleScope.launch {
+            val isInUse = withContext(Dispatchers.IO) {
+                repo.isEventTypeInUse(eventType.id)
+            }
+
+            val message = if (isInUse) {
+                getString(R.string.delete_event_type_confirm_with_usage, eventType.name)
+            } else {
+                getString(R.string.delete_event_type_confirm, eventType.name)
+            }
+
+            MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.delete_event_type)
+                .setMessage(message)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    lifecycleScope.launch {
+                        withContext(Dispatchers.IO) {
+                            repo.deleteEventType(eventType.id)
+                        }
+                    }
+                }
+                .show()
+        }
     }
 
     override fun onDestroyView() {

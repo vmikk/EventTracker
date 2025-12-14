@@ -60,6 +60,16 @@ class EventRepository(
         )
     }
 
+    suspend fun isEventTypeInUse(eventTypeId: String): Boolean =
+        db.eventTypeDao().countUsage(eventTypeId) > 0
+
+    suspend fun deleteEventType(eventTypeId: String) {
+        // First delete all associated day events
+        db.dayEventDao().deleteByEventTypeId(eventTypeId)
+        // Then delete the event type itself
+        db.eventTypeDao().deleteById(eventTypeId)
+    }
+
     suspend fun ensureDefaultEventTypesIfEmpty() {
         val existing = db.eventTypeDao().getActiveOnce()
         if (existing.isNotEmpty()) return

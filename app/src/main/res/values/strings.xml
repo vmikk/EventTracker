@@ -49,6 +49,9 @@
     <string name="dropbox_setup_instructions">Set your Dropbox app key in the string resource dropbox_app_key, and register redirect URI dev.vmikk.eventtracker://oauth2redirect in your Dropbox app settings.</string>
     <string name="restore_warning">This will replace the local database with the latest Dropbox backup. Restart is recommended after restore.</string>
     <string name="restore_done">Restore completed. Please fully close and reopen the app.</string>
+    <string name="delete_event_type">Delete event type</string>
+    <string name="delete_event_type_confirm">Are you sure you want to delete "%1$s"?</string>
+    <string name="delete_event_type_confirm_with_usage">Are you sure you want to delete "%1$s"? This will remove it from all days where it\'s currently used.</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
