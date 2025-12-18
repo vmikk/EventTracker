@@ -201,8 +201,15 @@ class EventRepository(
         }
     }
 
+    data class EventTypeCountWithNegated(
+        val eventTypeId: String,
+        val name: String,
+        val happenedCount: Int,
+        val negatedCount: Int,
+    )
+
     data class SummaryCounts(
-        val eventTypeCounts: List<DayEventDao.EventTypeCountRow>,
+        val eventTypeCounts: List<EventTypeCountWithNegated>,
         val customTextCounts: List<Pair<String, Int>>,
     )
 
@@ -210,8 +217,30 @@ class EventRepository(
         val startEpoch = start.toEpochDay()
         val endEpoch = end.toEpochDay()
 
-        val eventTypeCounts = db.dayEventDao().countByEventTypeInRangeOnce(startEpoch, endEpoch)
+        val happenedCounts = db.dayEventDao().countByEventTypeInRangeOnce(startEpoch, endEpoch)
+        val negatedCounts = db.dayEventDao().countNegatedByEventTypeInRangeOnce(startEpoch, endEpoch)
         val rawTextCounts = db.customEventDao().countByTextInRangeOnce(startEpoch, endEpoch)
+        val eventTypes = db.eventTypeDao().getActiveOnce().associateBy { it.id }
+
+        // Combine happened and negated counts by event type
+        val happenedMap = happenedCounts.associateBy { it.eventTypeId }
+        val negatedMap = negatedCounts.associateBy { it.eventTypeId }
+        val allEventTypeIds = (happenedMap.keys + negatedMap.keys).toSet()
+
+        val eventTypeCounts = allEventTypeIds.map { eventTypeId ->
+            val happened = happenedMap[eventTypeId]
+            val negated = negatedMap[eventTypeId]
+            EventTypeCountWithNegated(
+                eventTypeId = eventTypeId,
+                name = happened?.name ?: negated?.name ?: "",
+                happenedCount = happened?.cnt ?: 0,
+                negatedCount = negated?.cnt ?: 0,
+            )
+        }.sortedWith(
+            compareBy<EventTypeCountWithNegated> { type ->
+                eventTypes[type.eventTypeId]?.sortOrder ?: Int.MAX_VALUE
+            }.thenBy { it.name }
+        )
 
         // Normalize by trim + case-insensitive.
         val normalized = LinkedHashMap<String, Pair<String, Int>>() // key -> (displayText, count)

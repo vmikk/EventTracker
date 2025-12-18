@@ -1,9 +1,12 @@
 package dev.vmikk.eventtracker
 
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -112,12 +115,16 @@ class SummaryFragment : Fragment() {
 
         rows += SummaryRow.Header(getString(R.string.summary_event_types))
         counts.eventTypeCounts.forEach { r ->
-            rows += SummaryRow.Item(label = r.name, count = r.cnt)
+            rows += SummaryRow.Item(
+                label = r.name,
+                happenedCount = r.happenedCount,
+                negatedCount = r.negatedCount
+            )
         }
 
         rows += SummaryRow.Header(getString(R.string.summary_custom_texts))
         counts.customTextCounts.forEach { (text, cnt) ->
-            rows += SummaryRow.Item(label = text, count = cnt)
+            rows += SummaryRow.Item(label = text, happenedCount = cnt, negatedCount = 0)
         }
 
         return rows
@@ -158,7 +165,7 @@ class SummaryFragment : Fragment() {
 
     private sealed class SummaryRow {
         data class Header(val title: String) : SummaryRow()
-        data class Item(val label: String, val count: Int) : SummaryRow()
+        data class Item(val label: String, val happenedCount: Int, val negatedCount: Int) : SummaryRow()
     }
 
     private class SummaryAdapter : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
@@ -203,7 +210,27 @@ class SummaryFragment : Fragment() {
         private class ItemVH(private val binding: ItemSummaryRowBinding) : RecyclerView.ViewHolder(binding.root) {
             fun bind(row: SummaryRow.Item) {
                 binding.label.text = row.label
-                binding.count.text = row.count.toString()
+                if (row.negatedCount > 0) {
+                    // Format: "4 / 1" where 4 is happened, 1 is negated (in red)
+                    val text = "${row.happenedCount} / ${row.negatedCount}"
+                    binding.count.text = text
+                    // Set color spans: happened count in default color, negated count in red
+                    val spannable = SpannableString(text)
+                    val redColor = ContextCompat.getColor(binding.root.context, android.R.color.holo_red_dark)
+                    val negatedStart = text.indexOf("/") + 2 // Start after " / "
+                    val negatedEnd = text.length
+                    if (negatedStart < text.length) {
+                        spannable.setSpan(
+                            ForegroundColorSpan(redColor),
+                            negatedStart,
+                            negatedEnd,
+                            SpannableString.SPAN_EXCLUSIVE_EXCLUSIVE
+                        )
+                    }
+                    binding.count.text = spannable
+                } else {
+                    binding.count.text = row.happenedCount.toString()
+                }
             }
         }
     }

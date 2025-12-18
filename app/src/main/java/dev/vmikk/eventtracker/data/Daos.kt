@@ -71,6 +71,19 @@ interface DayEventDao {
     )
     suspend fun countByEventTypeInRangeOnce(startEpochDay: Long, endEpochDay: Long): List<EventTypeCountRow>
 
+    @Query(
+        """
+        SELECT de.event_type_id AS event_type_id, et.name AS name, COUNT(*) AS cnt
+        FROM day_events de
+        JOIN event_types et ON et.id = de.event_type_id
+        WHERE de.date_epoch_day BETWEEN :startEpochDay AND :endEpochDay
+        AND de.state = 2
+        GROUP BY de.event_type_id, et.name
+        ORDER BY et.sort_order ASC, et.name ASC
+        """
+    )
+    suspend fun countNegatedByEventTypeInRangeOnce(startEpochDay: Long, endEpochDay: Long): List<EventTypeCountRow>
+
     @Query("SELECT * FROM day_events")
     suspend fun getAllOnce(): List<DayEventEntity>
 
