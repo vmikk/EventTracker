@@ -47,7 +47,15 @@ data class DayEventEntity(
 
     @ColumnInfo(name = "event_type_id")
     val eventTypeId: String,
-)
+
+    @ColumnInfo(name = "state")
+    val state: Int = STATE_HAPPENED,
+) {
+    companion object {
+        const val STATE_HAPPENED = 1
+        const val STATE_NEGATED = 2
+    }
+}
 
 @Entity(
     tableName = "custom_events",

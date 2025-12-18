@@ -10,6 +10,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dev.vmikk.eventtracker.data.CustomEventEntity
+import dev.vmikk.eventtracker.data.DayEventEntity
 import dev.vmikk.eventtracker.data.EventRepository
 import dev.vmikk.eventtracker.data.EventTypeEntity
 import dev.vmikk.eventtracker.databinding.BottomSheetDayEventsBinding
@@ -78,10 +79,10 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
             binding.progress.isVisible = true
 
             val eventTypes = withContext(Dispatchers.IO) { repo.getActiveEventTypesOnce() }
-            val enabled = withContext(Dispatchers.IO) { repo.getEnabledEventTypeIdsOnce(date) }
+            val eventStates = withContext(Dispatchers.IO) { repo.getEventTypeStatesOnce(date) }
             val customEvents = withContext(Dispatchers.IO) { repo.listCustomEventsOnce(date) }
 
-            renderEventTypeToggles(eventTypes, enabled)
+            renderEventTypeToggles(eventTypes, eventStates)
             renderCustomEvents(customEvents)
 
             binding.progress.isVisible = false
@@ -90,7 +91,7 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
 
     private fun renderEventTypeToggles(
         eventTypes: List<EventTypeEntity>,
-        enabledEventTypeIds: Set<String>,
+        eventStates: Map<String, Int>,
     ) {
         binding.eventTypeContainer.removeAllViews()
         eventTypes.forEach { type ->
@@ -102,11 +103,59 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
             }
             row.eventName.text = label
 
+            val currentState = eventStates[type.id]
+            val isHappened = currentState == DayEventEntity.STATE_HAPPENED
+            val isNegated = currentState == DayEventEntity.STATE_NEGATED
+
+            // Visual feedback for negated state
+            if (isNegated) {
+                row.eventName.alpha = 0.5f
+                row.negateButton.alpha = 1.0f
+                row.negateButton.imageTintList = android.content.res.ColorStateList.valueOf(
+                    androidx.core.content.ContextCompat.getColor(requireContext(), R.color.grey_500)
+                )
+            } else {
+                row.eventName.alpha = 1.0f
+                row.negateButton.alpha = 0.6f
+                row.negateButton.imageTintList = null // Use default tint
+            }
+
+            // Switch: controls happened state
             row.eventSwitch.setOnCheckedChangeListener(null)
-            row.eventSwitch.isChecked = enabledEventTypeIds.contains(type.id)
+            row.eventSwitch.isChecked = isHappened
             row.eventSwitch.setOnCheckedChangeListener { _, isChecked ->
                 lifecycleScope.launch {
-                    withContext(Dispatchers.IO) { repo.toggleEvent(date, type.id, isChecked) }
+                    if (isChecked) {
+                        // Switch ON -> set to HAPPENED, clear negate
+                        withContext(Dispatchers.IO) {
+                            repo.setEventState(date, type.id, DayEventEntity.STATE_HAPPENED)
+                        }
+                    } else {
+                        // Switch OFF -> clear state (delete row)
+                        withContext(Dispatchers.IO) {
+                            repo.setEventState(date, type.id, null)
+                        }
+                    }
+                    refresh()
+                    notifyChanged()
+                }
+            }
+
+            // Negate button: controls negated state
+            row.negateButton.setOnClickListener {
+                lifecycleScope.launch {
+                    if (isNegated) {
+                        // Negate button ON -> turn it OFF (clear state)
+                        withContext(Dispatchers.IO) {
+                            repo.setEventState(date, type.id, null)
+                        }
+                    } else {
+                        // Negate button OFF -> set to NEGATED, force switch OFF
+                        withContext(Dispatchers.IO) {
+                            repo.setEventState(date, type.id, DayEventEntity.STATE_NEGATED)
+                        }
+                    }
+                    refresh()
                     notifyChanged()
                 }
             }
@@ -146,7 +195,7 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
 
     companion object {
         const val REQUEST_KEY_DAY_EVENTS_CHANGED = "dayEventsChanged"
-        private const val ARG_DATE_EPOCH_DAY = "dateEpochDay"
+        const val ARG_DATE_EPOCH_DAY = "dateEpochDay"
 
         fun show(fm: FragmentManager, date: LocalDate) {
             DayEventsBottomSheet().apply {

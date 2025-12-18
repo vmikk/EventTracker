@@ -28,6 +28,16 @@
             android:layout_weight="1"
             android:textAppearance="?attr/textAppearanceBodyLarge" />
 
+        <ImageButton
+            android:id="@+id/negate_button"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/negate_event"
+            android:padding="12dp"
+            android:src="@drawable/ic_negate"
+            android:tint="?attr/colorOnSurface" />
+
         <com.google.android.material.materialswitch.MaterialSwitch
             android:id="@+id/event_switch"
             android:layout_width="wrap_content"

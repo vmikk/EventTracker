@@ -35,7 +35,7 @@ interface EventTypeDao {
 
 @Dao
 interface DayEventDao {
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(dayEvent: DayEventEntity)
 
     @Delete
@@ -64,6 +64,7 @@ interface DayEventDao {
         FROM day_events de
         JOIN event_types et ON et.id = de.event_type_id
         WHERE de.date_epoch_day BETWEEN :startEpochDay AND :endEpochDay
+        AND de.state = 1
         GROUP BY de.event_type_id, et.name
         ORDER BY et.sort_order ASC, et.name ASC
         """

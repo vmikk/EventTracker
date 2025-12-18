@@ -105,12 +105,45 @@ class EventRepository(
     }
 
     suspend fun toggleEvent(date: LocalDate, eventTypeId: String, enabled: Boolean) {
-        val entity = DayEventEntity(dateEpochDay = date.toEpochDay(), eventTypeId = eventTypeId)
-        if (enabled) db.dayEventDao().insert(entity) else db.dayEventDao().delete(entity)
+        val entity = DayEventEntity(
+            dateEpochDay = date.toEpochDay(),
+            eventTypeId = eventTypeId,
+            state = DayEventEntity.STATE_HAPPENED
+        )
+        if (enabled) {
+            db.dayEventDao().insert(entity)
+        } else {
+            db.dayEventDao().delete(entity)
+        }
     }
 
+    suspend fun setEventState(date: LocalDate, eventTypeId: String, state: Int?) {
+        if (state == null) {
+            val entity = DayEventEntity(
+                dateEpochDay = date.toEpochDay(),
+                eventTypeId = eventTypeId,
+                state = DayEventEntity.STATE_HAPPENED
+            )
+            db.dayEventDao().delete(entity)
+        } else {
+            val entity = DayEventEntity(
+                dateEpochDay = date.toEpochDay(),
+                eventTypeId = eventTypeId,
+                state = state
+            )
+            db.dayEventDao().insert(entity)
+        }
+    }
+
+    suspend fun getEventTypeStatesOnce(date: LocalDate): Map<String, Int> =
+        db.dayEventDao().getByDateOnce(date.toEpochDay())
+            .associate { it.eventTypeId to it.state }
+
     suspend fun getEnabledEventTypeIdsOnce(date: LocalDate): Set<String> =
-        db.dayEventDao().getByDateOnce(date.toEpochDay()).map { it.eventTypeId }.toSet()
+        db.dayEventDao().getByDateOnce(date.toEpochDay())
+            .filter { it.state == DayEventEntity.STATE_HAPPENED }
+            .map { it.eventTypeId }
+            .toSet()
 
     suspend fun addCustomEvent(date: LocalDate, text: String): Boolean {
         val trimmed = text.trim()
@@ -158,6 +191,7 @@ class EventRepository(
                 DayMarker(
                     colorArgb = type.colorArgb,
                     emoji = type.emoji,
+                    isNegated = ev.state == DayEventEntity.STATE_NEGATED,
                 )
             }
             DayCellData(

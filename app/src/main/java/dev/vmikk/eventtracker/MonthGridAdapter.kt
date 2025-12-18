@@ -16,6 +16,7 @@ import android.widget.LinearLayout
 data class DayMarker(
     val colorArgb: Int? = null,
     val emoji: String? = null,
+    val isNegated: Boolean = false,
 )
 
 data class DayCellData(
@@ -120,6 +121,10 @@ class MonthGridAdapter(
                         val tv = TextView(binding.root.context).apply {
                             text = emoji
                             textSize = 12f
+                            if (m.isNegated) {
+                                alpha = 0.4f
+                                paintFlags = paintFlags or android.graphics.Paint.STRIKE_THRU_TEXT_FLAG
+                            }
                         }
                         binding.markerContainer.addView(tv)
                         shownIcons++
@@ -130,7 +135,17 @@ class MonthGridAdapter(
                             val margin = dpToPx(2f)
                             val dot = View(binding.root.context).apply {
                                 setBackgroundResource(R.drawable.bg_calendar_dot)
-                                background.setTint(color)
+                                val finalColor = if (m.isNegated) {
+                                    // Blend color toward grey for negated
+                                    val grey = ContextCompat.getColor(binding.root.context, R.color.grey_500)
+                                    blendColors(color, grey, 0.5f)
+                                } else {
+                                    color
+                                }
+                                background.setTint(finalColor)
+                                if (m.isNegated) {
+                                    alpha = 0.4f
+                                }
                             }
                             dot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
                                 marginEnd = margin
@@ -169,6 +184,15 @@ class MonthGridAdapter(
 
         private fun dpToPx(dp: Float): Int {
             return (dp * binding.root.resources.displayMetrics.density).toInt()
+        }
+
+        private fun blendColors(color1: Int, color2: Int, ratio: Float): Int {
+            val invRatio = 1f - ratio
+            val a = ((color1 shr 24 and 0xFF) * invRatio + (color2 shr 24 and 0xFF) * ratio).toInt()
+            val r = ((color1 shr 16 and 0xFF) * invRatio + (color2 shr 16 and 0xFF) * ratio).toInt()
+            val g = ((color1 shr 8 and 0xFF) * invRatio + (color2 shr 8 and 0xFF) * ratio).toInt()
+            val b = ((color1 and 0xFF) * invRatio + (color2 and 0xFF) * ratio).toInt()
+            return (a shl 24) or (r shl 16) or (g shl 8) or b
         }
     }
 }

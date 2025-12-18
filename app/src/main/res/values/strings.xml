@@ -53,6 +53,7 @@
     <string name="delete_event_type_confirm">Are you sure you want to delete "%1$s"?</string>
     <string name="delete_event_type_confirm_with_usage">Are you sure you want to delete "%1$s"? This will remove it from all days where it\'s currently used.</string>
     <string name="custom_event_duplicate">This custom event already exists for this day</string>
+    <string name="negate_event">Mark as did not happen</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris
