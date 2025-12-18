@@ -8,6 +8,7 @@ import android.content.res.ColorStateList
 import android.content.Intent
 import android.content.Context
 import androidx.core.content.FileProvider
+import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -29,6 +30,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 class SettingsFragment : Fragment() {
 
@@ -251,6 +253,11 @@ class SettingsFragment : Fragment() {
                         withContext(Dispatchers.IO) {
                             repo.deleteEventType(eventType.id)
                         }
+                        // Notify other fragments that events have changed
+                        parentFragmentManager.setFragmentResult(
+                            DayEventsBottomSheet.REQUEST_KEY_DAY_EVENTS_CHANGED,
+                            bundleOf(DayEventsBottomSheet.ARG_DATE_EPOCH_DAY to LocalDate.now().toEpochDay())
+                        )
                     }
                 }
                 .show()

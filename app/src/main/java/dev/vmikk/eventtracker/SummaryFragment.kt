@@ -52,6 +52,14 @@ class SummaryFragment : Fragment() {
         val adapter = SummaryAdapter()
         binding.summaryList.adapter = adapter
 
+        // Listen for day events changes from other fragments
+        parentFragmentManager.setFragmentResultListener(
+            DayEventsBottomSheet.REQUEST_KEY_DAY_EVENTS_CHANGED,
+            viewLifecycleOwner
+        ) { _, _ ->
+            refresh(adapter)
+        }
+
         // Default is per-month.
         binding.periodToggle.check(R.id.toggle_month)
 
