@@ -53,6 +53,38 @@ class MonthGridAdapter(
 
     override fun getItemCount(): Int = cells.size
 
+    /**
+     * Notifies that markers/content have changed for date cells only.
+     * More efficient than notifyDataSetChanged() as it skips empty cells.
+     */
+    fun notifyDateCellsChanged() {
+        cells.forEachIndexed { index, date ->
+            if (date != null) {
+                notifyItemChanged(index)
+            }
+        }
+    }
+
+    /**
+     * Notifies that a specific date's content has changed.
+     */
+    fun notifyDateChanged(date: LocalDate) {
+        val index = cells.indexOf(date)
+        if (index >= 0) {
+            notifyItemChanged(index)
+        }
+    }
+
+    /**
+     * Notifies that all cells need to be updated (e.g., when layout properties change).
+     * More efficient than notifyDataSetChanged() as it uses a range notification.
+     */
+    fun notifyAllCellsChanged() {
+        if (cells.isNotEmpty()) {
+            notifyItemRangeChanged(0, cells.size)
+        }
+    }
+
     private fun buildCells(month: YearMonth): List<LocalDate?> {
         val first = month.atDay(1)
         val last = month.atEndOfMonth()

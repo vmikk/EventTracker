@@ -93,7 +93,7 @@ class CalendarFragment : Fragment() {
         val markers = withContext(Dispatchers.IO) { repo.getMonthMarkers(currentMonth) }
         markerCache.clear()
         markerCache.putAll(markers)
-        adapter.notifyDataSetChanged()
+        adapter.notifyDateCellsChanged()
     }
 
     private fun renderMonth() {
@@ -112,7 +112,7 @@ class CalendarFragment : Fragment() {
         val newMax = prefs.getInt(SettingsFragment.KEY_CALENDAR_MAX_MARKERS, 3)
         if (adapter.maxMarkersPerDay != newMax) {
             adapter.maxMarkersPerDay = newMax
-            adapter.notifyDataSetChanged()
+            adapter.notifyDateCellsChanged()
         }
         applyGridSizing()
     }
@@ -130,7 +130,7 @@ class CalendarFragment : Fragment() {
 
             if (adapter.cellHeightPx != idealCellHeightPx) {
                 adapter.cellHeightPx = idealCellHeightPx
-                adapter.notifyDataSetChanged()
+                adapter.notifyAllCellsChanged()
             }
 
             val used = idealCellHeightPx * rows
