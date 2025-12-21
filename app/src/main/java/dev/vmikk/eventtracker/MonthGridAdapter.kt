@@ -37,8 +37,30 @@ class MonthGridAdapter(
     var cellHeightPx: Int? = null
 
     fun submitMonth(month: YearMonth) {
+        val oldSize = cells.size
         cells = buildCells(month)
-        notifyDataSetChanged()
+        val newSize = cells.size
+
+        when {
+            newSize == oldSize -> {
+                // Same size: use range change notification
+                notifyItemRangeChanged(0, newSize)
+            }
+            newSize > oldSize -> {
+                // Size increased: notify existing items changed, then insert new ones
+                if (oldSize > 0) {
+                    notifyItemRangeChanged(0, oldSize)
+                }
+                notifyItemRangeInserted(oldSize, newSize - oldSize)
+            }
+            else -> {
+                // Size decreased: notify existing items changed, then remove old ones
+                if (newSize > 0) {
+                    notifyItemRangeChanged(0, newSize)
+                }
+                notifyItemRangeRemoved(newSize, oldSize - newSize)
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DayViewHolder {
@@ -62,16 +84,6 @@ class MonthGridAdapter(
             if (date != null) {
                 notifyItemChanged(index)
             }
-        }
-    }
-
-    /**
-     * Notifies that a specific date's content has changed.
-     */
-    fun notifyDateChanged(date: LocalDate) {
-        val index = cells.indexOf(date)
-        if (index >= 0) {
-            notifyItemChanged(index)
         }
     }
 
