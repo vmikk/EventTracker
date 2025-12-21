@@ -8,6 +8,7 @@ import android.content.res.ColorStateList
 import android.content.Intent
 import android.content.Context
 import androidx.core.content.FileProvider
+import androidx.core.content.edit
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
@@ -72,7 +73,9 @@ class SettingsFragment : Fragment() {
 
         binding.dailyBackupSwitch.isChecked = prefs.getBoolean("daily_backup_enabled", false)
         binding.dailyBackupSwitch.setOnCheckedChangeListener { _, isChecked ->
-            prefs.edit().putBoolean("daily_backup_enabled", isChecked).apply()
+            prefs.edit {
+                putBoolean("daily_backup_enabled", isChecked)
+            }
             DropboxBackupScheduler.setDailyEnabled(requireContext(), isChecked)
         }
 
@@ -95,7 +98,9 @@ class SettingsFragment : Fragment() {
                 }
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
-                    prefs.edit().putInt(KEY_CALENDAR_MAX_MARKERS, selected + 1).apply()
+                    prefs.edit {
+                        putInt(KEY_CALENDAR_MAX_MARKERS, selected + 1)
+                    }
                     renderCalendarMaxMarkers()
                 }
                 .show()

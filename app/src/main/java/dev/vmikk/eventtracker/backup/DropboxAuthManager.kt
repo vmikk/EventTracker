@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.util.Base64
+import androidx.core.content.edit
 import dev.vmikk.eventtracker.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -39,9 +40,9 @@ object DropboxAuthManager {
         val verifier = generateCodeVerifier()
         val challenge = codeChallengeS256(verifier)
 
-        SecureStore.prefs(context).edit()
-            .putString(PREF_CODE_VERIFIER, verifier)
-            .apply()
+        SecureStore.prefs(context).edit {
+            putString(PREF_CODE_VERIFIER, verifier)
+        }
 
         val authUri = Uri.Builder()
             .scheme("https")
@@ -96,12 +97,12 @@ object DropboxAuthManager {
         if (refreshToken.isBlank()) return false
 
         val expiresAt = System.currentTimeMillis() + expiresIn * 1000L
-        SecureStore.prefs(context).edit()
-            .putString(PREF_REFRESH_TOKEN, refreshToken)
-            .putString(PREF_ACCESS_TOKEN, accessToken)
-            .putLong(PREF_EXPIRES_AT_MS, expiresAt)
-            .remove(PREF_CODE_VERIFIER)
-            .apply()
+        SecureStore.prefs(context).edit {
+            putString(PREF_REFRESH_TOKEN, refreshToken)
+            putString(PREF_ACCESS_TOKEN, accessToken)
+            putLong(PREF_EXPIRES_AT_MS, expiresAt)
+            remove(PREF_CODE_VERIFIER)
+        }
 
         return true
     }
@@ -139,10 +140,10 @@ object DropboxAuthManager {
         val expiresIn = json.optLong("expires_in", 0L)
         val newExpiresAt = System.currentTimeMillis() + expiresIn * 1000L
 
-        prefs.edit()
-            .putString(PREF_ACCESS_TOKEN, newAccess)
-            .putLong(PREF_EXPIRES_AT_MS, newExpiresAt)
-            .apply()
+        prefs.edit {
+            putString(PREF_ACCESS_TOKEN, newAccess)
+            putLong(PREF_EXPIRES_AT_MS, newExpiresAt)
+        }
 
         return newAccess
     }
@@ -159,11 +160,4 @@ object DropboxAuthManager {
         return Base64.encodeToString(digest, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
     }
 }
-
-
-
-
-
-
-
 
