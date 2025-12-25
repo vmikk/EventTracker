@@ -155,7 +155,7 @@ class MonthGridAdapter(
 
             // Icons shown inside the cell: up to maxMarkersPerDay.
             // - Event types: show emoji if present, otherwise a colored dot.
-            // - Custom events: show a single grey circle marker if there are custom events and space.
+            // - Custom events: show a single marker if there are custom events and space.
             val maxIcons = maxMarkersPerDay.coerceAtLeast(0)
 
             var shownIcons = 0
@@ -207,19 +207,19 @@ class MonthGridAdapter(
                 }
             }
 
-            // Show grey circle for custom events if there are any and space
+            // Show marker for custom events if there are any and space
             val remaining = (maxIcons - shownIcons).coerceAtLeast(0)
             if (customCount > 0 && remaining > 0) {
                 val size = dpToPx(14f)
                 val margin = dpToPx(2f)
-                val greyDot = View(binding.root.context).apply {
-                    setBackgroundResource(R.drawable.bg_calendar_dot)
-                    background.setTint(ContextCompat.getColor(binding.root.context, R.color.grey_500))
+                val customEventMarker = View(binding.root.context).apply {
+                    setBackgroundResource(R.drawable.bg_calendar_custom_event)
+                    background.setTint(ContextCompat.getColor(binding.root.context, R.color.light_blue))
                 }
-                greyDot.layoutParams = LinearLayout.LayoutParams(size, size).apply {
+                customEventMarker.layoutParams = LinearLayout.LayoutParams(size, size).apply {
                     marginEnd = margin
                 }
-                binding.markerContainer.addView(greyDot)
+                binding.markerContainer.addView(customEventMarker)
                 shownIcons++
             }
 
