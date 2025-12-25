@@ -91,9 +91,18 @@ class CalendarFragment : Fragment() {
 
     private suspend fun loadMonthMarkers(repo: EventRepository) {
         val markers = withContext(Dispatchers.IO) { repo.getMonthMarkers(currentMonth) }
-        markerCache.clear()
-        markerCache.putAll(markers)
-        adapter.notifyDateCellsChanged()
+        // Ensure we're on main thread for UI updates
+        withContext(Dispatchers.Main) {
+            if (!isAdded || view == null) return@withContext
+            markerCache.clear()
+            markerCache.putAll(markers)
+            // Post to ensure RecyclerView updates after any pending layout passes
+            binding.monthGrid.post {
+                if (isAdded && view != null) {
+                    adapter.notifyDateCellsChanged()
+                }
+            }
+        }
     }
 
     private fun renderMonth() {
