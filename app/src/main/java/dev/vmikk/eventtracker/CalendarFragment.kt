@@ -62,7 +62,14 @@ class CalendarFragment : Fragment() {
         parentFragmentManager.setFragmentResultListener(
             DayEventsBottomSheet.REQUEST_KEY_DAY_EVENTS_CHANGED,
             viewLifecycleOwner
-        ) { _, _ ->
+        ) { _, bundle ->
+            // Invalidate cache for the changed date to ensure fresh data
+            val changedDateEpochDay = bundle.getLong(DayEventsBottomSheet.ARG_DATE_EPOCH_DAY, -1)
+            if (changedDateEpochDay >= 0) {
+                val changedDate = LocalDate.ofEpochDay(changedDateEpochDay)
+                // Remove the cache entry for the changed date to force reload
+                markerCache.remove(changedDate)
+            }
             lifecycleScope.launch { loadMonthMarkers(repo) }
         }
 
@@ -108,6 +115,13 @@ class CalendarFragment : Fragment() {
             // Ensure we're on main thread for UI updates
             withContext(Dispatchers.Main) {
                 if (!isAdded || view == null) return@withContext
+                
+                // Clear cache entries for current month dates to ensure fresh data
+                val monthStart = currentMonth.atDay(1)
+                val monthEnd = currentMonth.atEndOfMonth()
+                markerCache.entries.removeAll { (date, _) ->
+                    date >= monthStart && date <= monthEnd
+                }
                 
                 // Limit cache to current month ± 1 month to prevent unbounded growth
                 val cacheStart = currentMonth.minusMonths(1).atDay(1)
