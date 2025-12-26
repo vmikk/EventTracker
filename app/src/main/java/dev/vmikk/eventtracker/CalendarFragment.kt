@@ -8,6 +8,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
 import dev.vmikk.eventtracker.data.EventRepository
+import dev.vmikk.eventtracker.data.PrefsManager
 import dev.vmikk.eventtracker.databinding.FragmentCalendarBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -28,9 +29,13 @@ class CalendarFragment : Fragment() {
 
     private lateinit var adapter: MonthGridAdapter
     private val markerCache: MutableMap<LocalDate, DayCellData> = mutableMapOf()
-    private val prefs by lazy { requireContext().getSharedPreferences("prefs", Context.MODE_PRIVATE) }
+    private val prefs by lazy { PrefsManager.getPrefs(requireContext()) }
     private var baseGridPaddingTop: Int = 0
     private var baseGridPaddingBottom: Int = 0
+
+    companion object {
+        private const val KEY_CURRENT_MONTH_EPOCH_DAY = "current_month_epoch_day"
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -43,6 +48,14 @@ class CalendarFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Restore state if available
+        savedInstanceState?.let {
+            val epochDay = it.getLong(KEY_CURRENT_MONTH_EPOCH_DAY, -1)
+            if (epochDay >= 0) {
+                currentMonth = YearMonth.from(LocalDate.ofEpochDay(epochDay))
+            }
+        }
 
         val repo = EventRepository.from(requireContext())
 
@@ -59,7 +72,7 @@ class CalendarFragment : Fragment() {
             },
             dayCellForDate = { date -> markerCache[date] ?: DayCellData() }
         )
-        adapter.maxMarkersPerDay = prefs.getInt(SettingsFragment.KEY_CALENDAR_MAX_MARKERS, 3)
+        adapter.maxMarkersPerDay = prefs.getInt(PrefsManager.KEY_CALENDAR_MAX_MARKERS, PrefsManager.DEFAULT_CALENDAR_MAX_MARKERS)
 
         binding.monthGrid.layoutManager = GridLayoutManager(requireContext(), 7)
         binding.monthGrid.adapter = adapter
@@ -90,18 +103,30 @@ class CalendarFragment : Fragment() {
     }
 
     private suspend fun loadMonthMarkers(repo: EventRepository) {
-        val markers = withContext(Dispatchers.IO) { repo.getMonthMarkers(currentMonth) }
-        // Ensure we're on main thread for UI updates
-        withContext(Dispatchers.Main) {
-            if (!isAdded || view == null) return@withContext
-            markerCache.clear()
-            markerCache.putAll(markers)
-            // Post to ensure RecyclerView updates after any pending layout passes
-            binding.monthGrid.post {
-                if (isAdded && view != null) {
-                    adapter.notifyDateCellsChanged()
+        try {
+            val markers = withContext(Dispatchers.IO) { repo.getMonthMarkers(currentMonth) }
+            // Ensure we're on main thread for UI updates
+            withContext(Dispatchers.Main) {
+                if (!isAdded || view == null) return@withContext
+                
+                // Limit cache to current month ± 1 month to prevent unbounded growth
+                val cacheStart = currentMonth.minusMonths(1).atDay(1)
+                val cacheEnd = currentMonth.plusMonths(1).atEndOfMonth()
+                markerCache.entries.removeAll { (date, _) ->
+                    date < cacheStart || date > cacheEnd
+                }
+                
+                markerCache.putAll(markers)
+                // Post to ensure RecyclerView updates after any pending layout passes
+                binding.monthGrid.post {
+                    if (isAdded && view != null) {
+                        adapter.notifyDateCellsChanged()
+                    }
                 }
             }
+        } catch (e: Exception) {
+            android.util.Log.e("CalendarFragment", "Error loading month markers", e)
+            // Silently fail - user can retry by navigating
         }
     }
 
@@ -118,7 +143,7 @@ class CalendarFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        val newMax = prefs.getInt(SettingsFragment.KEY_CALENDAR_MAX_MARKERS, 3)
+        val newMax = prefs.getInt(PrefsManager.KEY_CALENDAR_MAX_MARKERS, PrefsManager.DEFAULT_CALENDAR_MAX_MARKERS)
         if (adapter.maxMarkersPerDay != newMax) {
             adapter.maxMarkersPerDay = newMax
             adapter.notifyDateCellsChanged()
@@ -166,10 +191,14 @@ class CalendarFragment : Fragment() {
         return (dp * resources.displayMetrics.density).toInt()
     }
 
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong(KEY_CURRENT_MONTH_EPOCH_DAY, currentMonth.atDay(1).toEpochDay())
+    }
+
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
 }
-
 

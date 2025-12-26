@@ -55,16 +55,25 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
         binding.addCustomButton.setOnClickListener {
             val text = binding.customInput.text?.toString().orEmpty()
             lifecycleScope.launch {
-                val added = withContext(Dispatchers.IO) { repo.addCustomEvent(date, text) }
-                if (added) {
-                    binding.customInput.setText("")
-                    refresh()
-                    notifyChanged()
-                } else {
-                    // Show feedback for duplicate
+                try {
+                    val added = withContext(Dispatchers.IO) { repo.addCustomEvent(date, text) }
+                    if (added) {
+                        binding.customInput.setText("")
+                        refresh()
+                        notifyChanged()
+                    } else {
+                        // Show feedback for duplicate
+                        com.google.android.material.snackbar.Snackbar.make(
+                            binding.root,
+                            getString(R.string.custom_event_duplicate),
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("DayEventsBottomSheet", "Error adding custom event", e)
                     com.google.android.material.snackbar.Snackbar.make(
                         binding.root,
-                        getString(R.string.custom_event_duplicate),
+                        getString(R.string.error_saving_event),
                         com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
                     ).show()
                 }
@@ -77,15 +86,23 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
     private fun refresh() {
         lifecycleScope.launch {
             binding.progress.isVisible = true
+            try {
+                val eventTypes = withContext(Dispatchers.IO) { repo.getActiveEventTypesOnce() }
+                val eventStates = withContext(Dispatchers.IO) { repo.getEventTypeStatesOnce(date) }
+                val customEvents = withContext(Dispatchers.IO) { repo.listCustomEventsOnce(date) }
 
-            val eventTypes = withContext(Dispatchers.IO) { repo.getActiveEventTypesOnce() }
-            val eventStates = withContext(Dispatchers.IO) { repo.getEventTypeStatesOnce(date) }
-            val customEvents = withContext(Dispatchers.IO) { repo.listCustomEventsOnce(date) }
-
-            renderEventTypeToggles(eventTypes, eventStates)
-            renderCustomEvents(customEvents)
-
-            binding.progress.isVisible = false
+                renderEventTypeToggles(eventTypes, eventStates)
+                renderCustomEvents(customEvents)
+            } catch (e: Exception) {
+                android.util.Log.e("DayEventsBottomSheet", "Error loading events", e)
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    getString(R.string.error_loading_events),
+                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                ).show()
+            } finally {
+                binding.progress.isVisible = false
+            }
         }
     }
 
@@ -125,38 +142,62 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
             row.eventSwitch.isChecked = isHappened
             row.eventSwitch.setOnCheckedChangeListener { _, isChecked ->
                 lifecycleScope.launch {
-                    if (isChecked) {
-                        // Switch ON -> set to HAPPENED, clear negate
-                        withContext(Dispatchers.IO) {
-                            repo.setEventState(date, type.id, DayEventEntity.STATE_HAPPENED)
+                    try {
+                        if (isChecked) {
+                            // Switch ON -> set to HAPPENED, clear negate
+                            withContext(Dispatchers.IO) {
+                                repo.setEventState(date, type.id, DayEventEntity.STATE_HAPPENED)
+                            }
+                        } else {
+                            // Switch OFF -> clear state (delete row)
+                            withContext(Dispatchers.IO) {
+                                repo.setEventState(date, type.id, null)
+                            }
                         }
-                    } else {
-                        // Switch OFF -> clear state (delete row)
-                        withContext(Dispatchers.IO) {
-                            repo.setEventState(date, type.id, null)
+                        refresh()
+                        notifyChanged()
+                    } catch (e: Exception) {
+                        android.util.Log.e("DayEventsBottomSheet", "Error updating event state", e)
+                        com.google.android.material.snackbar.Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_saving_event),
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                        ).show()
+                        // Revert switch state on error
+                        row.eventSwitch.setOnCheckedChangeListener(null)
+                        row.eventSwitch.isChecked = !isChecked
+                        row.eventSwitch.setOnCheckedChangeListener { _, _ ->
+                            // Re-attach listener
                         }
                     }
-                    refresh()
-                    notifyChanged()
                 }
             }
 
             // Negate button: controls negated state
             row.negateButton.setOnClickListener {
                 lifecycleScope.launch {
-                    if (isNegated) {
-                        // Negate button ON -> turn it OFF (clear state)
-                        withContext(Dispatchers.IO) {
-                            repo.setEventState(date, type.id, null)
+                    try {
+                        if (isNegated) {
+                            // Negate button ON -> turn it OFF (clear state)
+                            withContext(Dispatchers.IO) {
+                                repo.setEventState(date, type.id, null)
+                            }
+                        } else {
+                            // Negate button OFF -> set to NEGATED, force switch OFF
+                            withContext(Dispatchers.IO) {
+                                repo.setEventState(date, type.id, DayEventEntity.STATE_NEGATED)
+                            }
                         }
-                    } else {
-                        // Negate button OFF -> set to NEGATED, force switch OFF
-                        withContext(Dispatchers.IO) {
-                            repo.setEventState(date, type.id, DayEventEntity.STATE_NEGATED)
-                        }
+                        refresh()
+                        notifyChanged()
+                    } catch (e: Exception) {
+                        android.util.Log.e("DayEventsBottomSheet", "Error updating event state", e)
+                        com.google.android.material.snackbar.Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_saving_event),
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                        ).show()
                     }
-                    refresh()
-                    notifyChanged()
                 }
             }
 
@@ -171,9 +212,18 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
             row.customText.text = ev.text
             row.deleteButton.setOnClickListener {
                 lifecycleScope.launch {
-                    withContext(Dispatchers.IO) { repo.deleteCustomEvent(ev.id) }
-                    refresh()
-                    notifyChanged()
+                    try {
+                        withContext(Dispatchers.IO) { repo.deleteCustomEvent(ev.id) }
+                        refresh()
+                        notifyChanged()
+                    } catch (e: Exception) {
+                        android.util.Log.e("DayEventsBottomSheet", "Error deleting custom event", e)
+                        com.google.android.material.snackbar.Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_deleting_event),
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                        ).show()
+                    }
                 }
             }
             binding.customContainer.addView(row.root)
@@ -204,7 +254,3 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
         }
     }
 }
-
-
-
-
