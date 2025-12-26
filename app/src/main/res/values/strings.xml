@@ -34,10 +34,18 @@
     <string name="week">Week</string>
     <string name="month">Month</string>
     <string name="year">Year</string>
+    <string name="weekday_monday">Mon</string>
+    <string name="weekday_tuesday">Tue</string>
+    <string name="weekday_wednesday">Wed</string>
+    <string name="weekday_thursday">Thu</string>
+    <string name="weekday_friday">Fri</string>
+    <string name="weekday_saturday">Sat</string>
+    <string name="weekday_sunday">Sun</string>
     <string name="previous_period">Previous period</string>
     <string name="next_period">Next period</string>
     <string name="summary_event_types">Event types</string>
     <string name="summary_custom_texts">Custom texts</string>
+    <string name="summary_empty">No events recorded for this period</string>
     <string name="backups">Backups</string>
     <string name="connect_dropbox">Connect Dropbox</string>
     <string name="backup_now">Backup now</string>
@@ -54,6 +62,18 @@
     <string name="delete_event_type_confirm_with_usage">Are you sure you want to delete "%1$s"? This will remove it from all days where it\'s currently used.</string>
     <string name="custom_event_duplicate">This custom event already exists for this day</string>
     <string name="negate_event">Mark as did not happen</string>
+    <string name="error_saving_event">Failed to save event. Please try again.</string>
+    <string name="error_loading_events">Failed to load events. Please try again.</string>
+    <string name="error_deleting_event">Failed to delete event. Please try again.</string>
+    <string name="error_exporting">Failed to export data. Please try again.</string>
+    <string name="error_backup">Backup failed. Please check your connection and try again.</string>
+    <string name="error_restore">Restore failed. Please check your connection and try again.</string>
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_auth">Authentication failed. Please reconnect to Dropbox.</string>
+    <string name="dropbox_connect_success">Successfully connected to Dropbox</string>
+    <string name="dropbox_connect_failed">Failed to connect to Dropbox. Please try again.</string>
+    <string name="backup_success">Backup completed successfully</string>
+    <string name="restore_success">Restore completed successfully</string>
 
     <string name="lorem_ipsum">
         Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam in scelerisque sem. Mauris

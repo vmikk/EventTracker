@@ -38,6 +38,74 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <LinearLayout
+        android:id="@+id/weekday_headers"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/prev_month">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_monday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_tuesday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_wednesday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_thursday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_friday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_saturday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:text="@string/weekday_sunday"
+            android:textAppearance="?attr/textAppearanceLabelSmall" />
+    </LinearLayout>
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/month_grid"
         android:layout_width="0dp"
@@ -48,7 +116,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/prev_month" />
+        app:layout_constraintTop_toBottomOf="@id/weekday_headers" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/add_today_fab"

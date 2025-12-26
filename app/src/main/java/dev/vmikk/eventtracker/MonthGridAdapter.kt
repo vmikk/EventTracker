@@ -142,6 +142,24 @@ class MonthGridAdapter(
             binding.dayNumber.text = date.dayOfMonth.toString()
             binding.root.setOnClickListener { onDateClick(date) }
 
+            // Highlight today's date
+            val isToday = date == LocalDate.now()
+            if (isToday) {
+                binding.root.setCardBackgroundColor(
+                    androidx.core.content.ContextCompat.getColor(
+                        binding.root.context,
+                        R.color.today_background
+                    )
+                )
+            } else {
+                binding.root.setCardBackgroundColor(
+                    androidx.core.content.ContextCompat.getColor(
+                        binding.root.context,
+                        android.R.color.transparent
+                    )
+                )
+            }
+
             val cell = dayCellForDate(date)
             renderCell(cell)
         }
@@ -239,7 +257,4 @@ class MonthGridAdapter(
 }
 
 private fun DayOfWeek.isoIndex(): Int = value // Monday=1 ... Sunday=7
-
-
-
 

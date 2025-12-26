@@ -17,12 +17,14 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.chip.Chip
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import dev.vmikk.eventtracker.backup.BackupResult
 import dev.vmikk.eventtracker.backup.DatabaseBackup
 import dev.vmikk.eventtracker.backup.DropboxAuthManager
 import dev.vmikk.eventtracker.backup.DropboxBackupScheduler
 import dev.vmikk.eventtracker.backup.DropboxBackupService
 import dev.vmikk.eventtracker.data.EventRepository
 import dev.vmikk.eventtracker.data.EventTypeEntity
+import dev.vmikk.eventtracker.data.PrefsManager
 import dev.vmikk.eventtracker.databinding.FragmentSettingsBinding
 import dev.vmikk.eventtracker.databinding.DialogEditEventTypeBinding
 import dev.vmikk.eventtracker.export.TsvExporter
@@ -38,7 +40,7 @@ class SettingsFragment : Fragment() {
     private var _binding: FragmentSettingsBinding? = null
     private val binding get() = _binding!!
     private val repo by lazy { EventRepository.from(requireContext()) }
-    private val prefs by lazy { requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) }
+    private val prefs by lazy { PrefsManager.getPrefs(requireContext()) }
 
     private lateinit var adapter: EventTypeAdapter
 
@@ -64,30 +66,39 @@ class SettingsFragment : Fragment() {
         binding.addEventType.setOnClickListener { showEditDialog(null) }
         binding.exportTsv.setOnClickListener {
             lifecycleScope.launch {
-                val file = withContext(Dispatchers.IO) {
-                    TsvExporter.exportAllNonEmptyDates(requireContext(), repo)
+                try {
+                    val file = withContext(Dispatchers.IO) {
+                        TsvExporter.exportAllNonEmptyDates(requireContext(), repo)
+                    }
+                    shareFile(file)
+                } catch (e: Exception) {
+                    android.util.Log.e("SettingsFragment", "Error exporting TSV", e)
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        getString(R.string.error_exporting),
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                    ).show()
                 }
-                shareFile(file)
             }
         }
 
-        binding.dailyBackupSwitch.isChecked = prefs.getBoolean("daily_backup_enabled", false)
+        binding.dailyBackupSwitch.isChecked = prefs.getBoolean(PrefsManager.KEY_DAILY_BACKUP_ENABLED, PrefsManager.DEFAULT_DAILY_BACKUP_ENABLED)
         binding.dailyBackupSwitch.setOnCheckedChangeListener { _, isChecked ->
             prefs.edit {
-                putBoolean("daily_backup_enabled", isChecked)
+                putBoolean(PrefsManager.KEY_DAILY_BACKUP_ENABLED, isChecked)
             }
             DropboxBackupScheduler.setDailyEnabled(requireContext(), isChecked)
         }
 
         fun renderCalendarMaxMarkers() {
-            val n = prefs.getInt(KEY_CALENDAR_MAX_MARKERS, DEFAULT_CALENDAR_MAX_MARKERS)
+            val n = prefs.getInt(PrefsManager.KEY_CALENDAR_MAX_MARKERS, PrefsManager.DEFAULT_CALENDAR_MAX_MARKERS)
             binding.calendarMaxMarkers.text = getString(R.string.calendar_max_markers_value, n)
         }
 
         renderCalendarMaxMarkers()
         binding.calendarMaxMarkers.setOnClickListener {
             val options = (1..6).map { it.toString() }.toTypedArray()
-            val current = (prefs.getInt(KEY_CALENDAR_MAX_MARKERS, DEFAULT_CALENDAR_MAX_MARKERS) - 1)
+            val current = (prefs.getInt(PrefsManager.KEY_CALENDAR_MAX_MARKERS, PrefsManager.DEFAULT_CALENDAR_MAX_MARKERS) - 1)
                 .coerceIn(0, options.lastIndex)
             var selected = current
 
@@ -99,7 +110,7 @@ class SettingsFragment : Fragment() {
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
                     prefs.edit {
-                        putInt(KEY_CALENDAR_MAX_MARKERS, selected + 1)
+                        putInt(PrefsManager.KEY_CALENDAR_MAX_MARKERS, selected + 1)
                     }
                     renderCalendarMaxMarkers()
                 }
@@ -119,28 +130,100 @@ class SettingsFragment : Fragment() {
         }
 
         binding.backupNow.setOnClickListener {
-            if (!DropboxAuthManager.isLinked(requireContext())) return@setOnClickListener
-            DropboxBackupScheduler.enqueueImmediate(requireContext())
+            if (!DropboxAuthManager.isLinked(requireContext())) {
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    getString(R.string.error_auth),
+                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
+            binding.backupNow.isEnabled = false
+            lifecycleScope.launch {
+                try {
+                    DropboxBackupScheduler.enqueueImmediate(requireContext())
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        getString(R.string.backup_success),
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                    ).show()
+                } catch (e: Exception) {
+                    android.util.Log.e("SettingsFragment", "Error initiating backup", e)
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        getString(R.string.error_backup),
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                    ).show()
+                } finally {
+                    binding.backupNow.isEnabled = true
+                }
+            }
         }
 
         binding.restoreLatest.setOnClickListener {
-            if (!DropboxAuthManager.isLinked(requireContext())) return@setOnClickListener
+            if (!DropboxAuthManager.isLinked(requireContext())) {
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    getString(R.string.error_auth),
+                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                ).show()
+                return@setOnClickListener
+            }
             MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.restore_latest)
                 .setMessage(getString(R.string.restore_warning))
                 .setNegativeButton(android.R.string.cancel, null)
                 .setPositiveButton(android.R.string.ok) { _, _ ->
+                    binding.restoreLatest.isEnabled = false
                     lifecycleScope.launch {
-                        val downloaded = withContext(Dispatchers.IO) {
-                            DropboxBackupService.downloadLatestBackup(requireContext())
-                        }
-                        if (downloaded != null) {
-                            withContext(Dispatchers.IO) { DatabaseBackup.restoreFromEncryptedBackup(requireContext(), downloaded) }
-                            MaterialAlertDialogBuilder(requireContext())
-                                .setTitle(R.string.restore_latest)
-                                .setMessage(getString(R.string.restore_done))
-                                .setPositiveButton(android.R.string.ok, null)
-                                .show()
+                        try {
+                            val result = DropboxBackupService.downloadLatestBackup(requireContext())
+                            when (result) {
+                                is BackupResult.Success -> {
+                                    val file = result.file
+                                    if (file != null) {
+                                        try {
+                                            withContext(Dispatchers.IO) {
+                                                DatabaseBackup.restoreFromEncryptedBackup(requireContext(), file)
+                                            }
+                                            MaterialAlertDialogBuilder(requireContext())
+                                                .setTitle(R.string.restore_latest)
+                                                .setMessage(getString(R.string.restore_done))
+                                                .setPositiveButton(android.R.string.ok, null)
+                                                .show()
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("SettingsFragment", "Error restoring backup", e)
+                                            com.google.android.material.snackbar.Snackbar.make(
+                                                binding.root,
+                                                getString(R.string.error_restore),
+                                                com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    } else {
+                                        com.google.android.material.snackbar.Snackbar.make(
+                                            binding.root,
+                                            getString(R.string.error_restore),
+                                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                                        ).show()
+                                    }
+                                }
+                                is BackupResult.Error -> {
+                                    com.google.android.material.snackbar.Snackbar.make(
+                                        binding.root,
+                                        result.message,
+                                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("SettingsFragment", "Error restoring backup", e)
+                            com.google.android.material.snackbar.Snackbar.make(
+                                binding.root,
+                                getString(R.string.error_restore),
+                                com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                            ).show()
+                        } finally {
+                            binding.restoreLatest.isEnabled = true
                         }
                     }
                 }
@@ -162,7 +245,7 @@ class SettingsFragment : Fragment() {
         binding.connectDropbox.isEnabled = !linked
         binding.connectDropbox.text = if (linked) getString(R.string.dropbox_connected) else getString(R.string.connect_dropbox)
 
-        val n = prefs.getInt(KEY_CALENDAR_MAX_MARKERS, DEFAULT_CALENDAR_MAX_MARKERS)
+        val n = prefs.getInt(PrefsManager.KEY_CALENDAR_MAX_MARKERS, PrefsManager.DEFAULT_CALENDAR_MAX_MARKERS)
         binding.calendarMaxMarkers.text = getString(R.string.calendar_max_markers_value, n)
     }
 
@@ -222,15 +305,44 @@ class SettingsFragment : Fragment() {
             .setView(dialogBinding.root)
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(android.R.string.ok) { _, _ ->
-                val name = dialogBinding.nameInput.text?.toString().orEmpty()
-                val emoji = dialogBinding.emojiInput.text?.toString().orEmpty()
+                val name = dialogBinding.nameInput.text?.toString().orEmpty().trim()
+                val emoji = dialogBinding.emojiInput.text?.toString().orEmpty().trim()
+                
+                // Validate input
+                if (name.isBlank()) {
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        "Event name cannot be empty",
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+                
+                if (name.length > 50) {
+                    com.google.android.material.snackbar.Snackbar.make(
+                        binding.root,
+                        "Event name is too long (max 50 characters)",
+                        com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                    ).show()
+                    return@setPositiveButton
+                }
+                
                 lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
-                        if (existing == null) {
-                            repo.createEventType(name = name, colorArgb = selectedColor, emoji = emoji)
-                        } else {
-                            repo.updateEventType(id = existing.id, name = name, colorArgb = selectedColor, emoji = emoji)
+                    try {
+                        withContext(Dispatchers.IO) {
+                            if (existing == null) {
+                                repo.createEventType(name = name, colorArgb = selectedColor, emoji = emoji)
+                            } else {
+                                repo.updateEventType(id = existing.id, name = name, colorArgb = selectedColor, emoji = emoji)
+                            }
                         }
+                    } catch (e: Exception) {
+                        android.util.Log.e("SettingsFragment", "Error saving event type", e)
+                        com.google.android.material.snackbar.Snackbar.make(
+                            binding.root,
+                            getString(R.string.error_saving_event),
+                            com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                        ).show()
                     }
                 }
             }
@@ -239,33 +351,51 @@ class SettingsFragment : Fragment() {
 
     private fun showDeleteDialog(eventType: EventTypeEntity) {
         lifecycleScope.launch {
-            val isInUse = withContext(Dispatchers.IO) {
-                repo.isEventTypeInUse(eventType.id)
-            }
-
-            val message = if (isInUse) {
-                getString(R.string.delete_event_type_confirm_with_usage, eventType.name)
-            } else {
-                getString(R.string.delete_event_type_confirm, eventType.name)
-            }
-
-            MaterialAlertDialogBuilder(requireContext())
-                .setTitle(R.string.delete_event_type)
-                .setMessage(message)
-                .setNegativeButton(android.R.string.cancel, null)
-                .setPositiveButton(android.R.string.ok) { _, _ ->
-                    lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
-                            repo.deleteEventType(eventType.id)
-                        }
-                        // Notify other fragments that events have changed
-                        parentFragmentManager.setFragmentResult(
-                            DayEventsBottomSheet.REQUEST_KEY_DAY_EVENTS_CHANGED,
-                            bundleOf(DayEventsBottomSheet.ARG_DATE_EPOCH_DAY to LocalDate.now().toEpochDay())
-                        )
-                    }
+            try {
+                val isInUse = withContext(Dispatchers.IO) {
+                    repo.isEventTypeInUse(eventType.id)
                 }
-                .show()
+
+                val message = if (isInUse) {
+                    getString(R.string.delete_event_type_confirm_with_usage, eventType.name)
+                } else {
+                    getString(R.string.delete_event_type_confirm, eventType.name)
+                }
+
+                MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(R.string.delete_event_type)
+                    .setMessage(message)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(android.R.string.ok) { _, _ ->
+                        lifecycleScope.launch {
+                            try {
+                                withContext(Dispatchers.IO) {
+                                    repo.deleteEventType(eventType.id)
+                                }
+                                // Notify other fragments that events have changed
+                                parentFragmentManager.setFragmentResult(
+                                    DayEventsBottomSheet.REQUEST_KEY_DAY_EVENTS_CHANGED,
+                                    bundleOf(DayEventsBottomSheet.ARG_DATE_EPOCH_DAY to LocalDate.now().toEpochDay())
+                                )
+                            } catch (e: Exception) {
+                                android.util.Log.e("SettingsFragment", "Error deleting event type", e)
+                                com.google.android.material.snackbar.Snackbar.make(
+                                    binding.root,
+                                    getString(R.string.error_deleting_event),
+                                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                                ).show()
+                            }
+                        }
+                    }
+                    .show()
+            } catch (e: Exception) {
+                android.util.Log.e("SettingsFragment", "Error checking event type usage", e)
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    getString(R.string.error_loading_events),
+                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                ).show()
+            }
         }
     }
 
@@ -274,11 +404,5 @@ class SettingsFragment : Fragment() {
         _binding = null
     }
 
-    companion object {
-        private const val PREFS_NAME = "prefs"
-        const val KEY_CALENDAR_MAX_MARKERS = "calendar_max_markers"
-        private const val DEFAULT_CALENDAR_MAX_MARKERS = 3
-    }
 }
-
 

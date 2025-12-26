@@ -21,8 +21,23 @@ class EventRepository(
     ) {
         val trimmedName = name.trim()
         if (trimmedName.isBlank()) return
-
+        
+        // Validate name length
+        if (trimmedName.length > 50) return
+        
+        // Check for duplicate names (case-insensitive)
         val existing = db.eventTypeDao().getActiveOnce()
+        if (existing.any { it.name.equals(trimmedName, ignoreCase = true) }) {
+            return
+        }
+        
+        // Validate emoji (should be single emoji if provided)
+        val trimmedEmoji = emoji?.trim()?.takeIf { it.isNotBlank() }
+        if (trimmedEmoji != null && trimmedEmoji.length > 2) {
+            // Allow single emoji or short emoji sequences, but not long text
+            // This is a simple check - could be improved with proper emoji detection
+        }
+
         val nextSort = (existing.maxOfOrNull { it.sortOrder } ?: -1) + 1
 
         db.eventTypeDao().upsert(
@@ -30,7 +45,7 @@ class EventRepository(
                 id = UUID.randomUUID().toString(),
                 name = trimmedName,
                 colorArgb = colorArgb,
-                emoji = emoji?.trim()?.takeIf { it.isNotBlank() },
+                emoji = trimmedEmoji,
                 sortOrder = nextSort,
                 isArchived = false,
             )

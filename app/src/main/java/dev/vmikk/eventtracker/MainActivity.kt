@@ -45,12 +45,33 @@ class MainActivity : AppCompatActivity() {
         if (data.scheme != "dev.vmikk.eventtracker" || data.host != "oauth2redirect") return
 
         lifecycleScope.launch {
-            val ok = DropboxAuthManager.handleRedirect(this@MainActivity, data)
-            Toast.makeText(
-                this@MainActivity,
-                if (ok) getString(R.string.connect_dropbox) + ": OK" else getString(R.string.connect_dropbox) + ": Failed",
-                Toast.LENGTH_LONG
-            ).show()
+            try {
+                val ok = DropboxAuthManager.handleRedirect(this@MainActivity, data)
+                val message = if (ok) {
+                    getString(R.string.dropbox_connect_success)
+                } else {
+                    // Check for error in redirect
+                    val error = data.getQueryParameter("error")
+                    val errorDescription = data.getQueryParameter("error_description")
+                    when {
+                        error == "access_denied" -> "Dropbox connection was cancelled"
+                        error != null -> errorDescription ?: "Failed to connect to Dropbox"
+                        else -> getString(R.string.dropbox_connect_failed)
+                    }
+                }
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    message,
+                    com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+                ).show()
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "Error handling OAuth redirect", e)
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    getString(R.string.dropbox_connect_failed),
+                    com.google.android.material.snackbar.Snackbar.LENGTH_LONG
+                ).show()
+            }
         }
     }
 

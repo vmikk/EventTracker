@@ -14,6 +14,10 @@ class HomePagerFragment : Fragment() {
     private var _binding: FragmentHomePagerBinding? = null
     private val binding get() = _binding!!
 
+    companion object {
+        private const val KEY_VIEWPAGER_POSITION = "viewpager_position"
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -43,6 +47,17 @@ class HomePagerFragment : Fragment() {
                 else -> getString(R.string.summary_tab)
             }
         }.attach()
+
+        // Restore ViewPager position
+        savedInstanceState?.let {
+            val position = it.getInt(KEY_VIEWPAGER_POSITION, 0)
+            binding.viewPager.setCurrentItem(position, false)
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_VIEWPAGER_POSITION, binding.viewPager.currentItem)
     }
 
     override fun onDestroyView() {
@@ -50,9 +65,4 @@ class HomePagerFragment : Fragment() {
         _binding = null
     }
 }
-
-
-
-
-
 

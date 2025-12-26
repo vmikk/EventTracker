@@ -39,6 +39,11 @@ class SummaryFragment : Fragment() {
     private var mode: Mode = Mode.MONTH
     private var anchorDate: LocalDate = LocalDate.now()
 
+    companion object {
+        private const val KEY_MODE = "mode"
+        private const val KEY_ANCHOR_DATE_EPOCH_DAY = "anchor_date_epoch_day"
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -50,6 +55,16 @@ class SummaryFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        // Restore state if available
+        savedInstanceState?.let {
+            val modeOrdinal = it.getInt(KEY_MODE, Mode.MONTH.ordinal)
+            mode = Mode.values().getOrElse(modeOrdinal) { Mode.MONTH }
+            val epochDay = it.getLong(KEY_ANCHOR_DATE_EPOCH_DAY, -1)
+            if (epochDay >= 0) {
+                anchorDate = LocalDate.ofEpochDay(epochDay)
+            }
+        }
 
         binding.summaryList.layoutManager = LinearLayoutManager(requireContext())
         val adapter = SummaryAdapter()
@@ -63,8 +78,13 @@ class SummaryFragment : Fragment() {
             refresh(adapter)
         }
 
-        // Default is per-month.
-        binding.periodToggle.check(R.id.toggle_month)
+        // Restore period toggle selection
+        val toggleId = when (mode) {
+            Mode.WEEK -> R.id.toggle_week
+            Mode.YEAR -> R.id.toggle_year
+            Mode.MONTH -> R.id.toggle_month
+        }
+        binding.periodToggle.check(toggleId)
 
         binding.periodToggle.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if (!isChecked) return@addOnButtonCheckedListener
@@ -103,10 +123,24 @@ class SummaryFragment : Fragment() {
 
         lifecycleScope.launch {
             binding.progress.isVisible = true
-            val counts = withContext(Dispatchers.IO) { repo.getSummaryCounts(start, end) }
-            val rows = buildRows(counts)
-            adapter.submit(rows)
-            binding.progress.isVisible = false
+            try {
+                val counts = withContext(Dispatchers.IO) { repo.getSummaryCounts(start, end) }
+                val rows = buildRows(counts)
+                adapter.submit(rows)
+                // Show empty state if no data (only headers or empty)
+                val isEmpty = rows.isEmpty() || (rows.size == 2 && rows.all { it is SummaryRow.Header })
+                binding.emptyState.isVisible = isEmpty
+                binding.summaryList.isVisible = !isEmpty
+            } catch (e: Exception) {
+                android.util.Log.e("SummaryFragment", "Error loading summary", e)
+                com.google.android.material.snackbar.Snackbar.make(
+                    binding.root,
+                    getString(R.string.error_loading_events),
+                    com.google.android.material.snackbar.Snackbar.LENGTH_SHORT
+                ).show()
+            } finally {
+                binding.progress.isVisible = false
+            }
         }
     }
 
@@ -156,6 +190,12 @@ class SummaryFragment : Fragment() {
                 RangeTitle(start, end, "Week $week, $weekYear")
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(KEY_MODE, mode.ordinal)
+        outState.putLong(KEY_ANCHOR_DATE_EPOCH_DAY, anchorDate.toEpochDay())
     }
 
     override fun onDestroyView() {
@@ -235,5 +275,4 @@ class SummaryFragment : Fragment() {
         }
     }
 }
-
 
