@@ -17,9 +17,20 @@ class DropboxBackupWorker(
 
         return try {
             val encrypted = DatabaseBackup.createEncryptedBackup(context)
-            DropboxBackupService.uploadBackup(context, encrypted, keepLast = 30)
-            Result.success()
-        } catch (_: Exception) {
+            val result = DropboxBackupService.uploadBackup(context, encrypted, keepLast = 30)
+            when (result) {
+                is dev.vmikk.eventtracker.backup.BackupResult.Success -> Result.success()
+                is dev.vmikk.eventtracker.backup.BackupResult.Error -> {
+                    android.util.Log.e("DropboxBackupWorker", "Backup failed: ${result.message}")
+                    when (result.type) {
+                        dev.vmikk.eventtracker.backup.BackupResult.ErrorType.NETWORK -> Result.retry()
+                        dev.vmikk.eventtracker.backup.BackupResult.ErrorType.AUTH -> Result.failure()
+                        else -> Result.retry()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("DropboxBackupWorker", "Unexpected error during backup", e)
             Result.retry()
         }
     }
