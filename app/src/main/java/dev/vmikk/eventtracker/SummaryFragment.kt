@@ -184,10 +184,24 @@ class SummaryFragment : Fragment() {
             Mode.WEEK -> {
                 val start = anchor.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
                 val end = start.plusDays(6)
-                val weekFields = WeekFields.ISO
-                val week = start.get(weekFields.weekOfWeekBasedYear())
-                val weekYear = start.get(weekFields.weekBasedYear())
-                RangeTitle(start, end, "Week $week, $weekYear")
+                val dateFormatter = DateTimeFormatter.ofPattern("MMM dd", Locale.getDefault())
+                val year = start.year
+                val title = if (start.month == end.month) {
+                    // Same month: "Nov 01 - 07, 2025"
+                    val monthDay = start.format(DateTimeFormatter.ofPattern("MMM", Locale.getDefault()))
+                    val startDay = start.dayOfMonth.toString().padStart(2, '0')
+                    val endDay = end.dayOfMonth.toString().padStart(2, '0')
+                    "$monthDay $startDay - $endDay, $year"
+                } else {
+                    // Different months: "Nov 27 - Dec 02, 2025" or "Dec 29, 2024 - Jan 04, 2025" if spans years
+                    if (start.year == end.year) {
+                        "${start.format(dateFormatter)} - ${end.format(dateFormatter)}, $year"
+                    } else {
+                        val dateFormatterWithYear = DateTimeFormatter.ofPattern("MMM dd, yyyy", Locale.getDefault())
+                        "${start.format(dateFormatterWithYear)} - ${end.format(dateFormatterWithYear)}"
+                    }
+                }
+                RangeTitle(start, end, title)
             }
         }
     }
