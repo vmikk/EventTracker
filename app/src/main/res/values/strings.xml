@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">EventTracker</string>
     <string name="action_settings">Settings</string>
+    <string name="open_settings">Open settings</string>
     <string name="calendar_tab">Calendar</string>
     <string name="summary_tab">Summary</string>
     <!-- Strings used for fragments for navigation -->

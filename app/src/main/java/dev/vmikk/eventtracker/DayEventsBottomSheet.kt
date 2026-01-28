@@ -8,6 +8,7 @@ import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.findNavController
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dev.vmikk.eventtracker.data.CustomEventEntity
 import dev.vmikk.eventtracker.data.DayEventEntity
@@ -51,6 +52,13 @@ class DayEventsBottomSheet : BottomSheetDialogFragment() {
         val titleFormatter =
             DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL).withLocale(Locale.getDefault())
         binding.dateTitle.text = date.format(titleFormatter)
+
+        binding.openSettings.setOnClickListener {
+            dismiss()
+            requireActivity()
+                .findNavController(R.id.nav_host_fragment_content_main)
+                .navigate(R.id.settingsFragment)
+        }
 
         binding.addCustomButton.setOnClickListener {
             val text = binding.customInput.text?.toString().orEmpty()
