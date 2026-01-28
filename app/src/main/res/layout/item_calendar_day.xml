@@ -8,13 +8,14 @@
     android:focusable="true"
     android:foreground="?attr/selectableItemBackground"
     app:cardElevation="0dp"
+    app:cardCornerRadius="@dimen/calendar_cell_corner"
     app:cardUseCompatPadding="false"
     app:strokeWidth="0dp">
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="6dp">
+        android:padding="@dimen/calendar_cell_padding">
 
         <TextView
             android:id="@+id/day_number"

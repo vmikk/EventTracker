@@ -63,14 +63,11 @@ class CalendarFragment : Fragment() {
             DayEventsBottomSheet.REQUEST_KEY_DAY_EVENTS_CHANGED,
             viewLifecycleOwner
         ) { _, bundle ->
-            // Invalidate cache for the changed date to ensure fresh data
             val changedDateEpochDay = bundle.getLong(DayEventsBottomSheet.ARG_DATE_EPOCH_DAY, -1)
             if (changedDateEpochDay >= 0) {
                 val changedDate = LocalDate.ofEpochDay(changedDateEpochDay)
-                // Remove the cache entry for the changed date to force reload
-                markerCache.remove(changedDate)
+                lifecycleScope.launch { refreshDayMarker(repo, changedDate) }
             }
-            lifecycleScope.launch { loadMonthMarkers(repo) }
         }
 
         adapter = MonthGridAdapter(
@@ -141,6 +138,23 @@ class CalendarFragment : Fragment() {
         } catch (e: Exception) {
             android.util.Log.e("CalendarFragment", "Error loading month markers", e)
             // Silently fail - user can retry by navigating
+        }
+    }
+
+    private suspend fun refreshDayMarker(repo: EventRepository, date: LocalDate) {
+        try {
+            val dayData = withContext(Dispatchers.IO) { repo.getDayMarkers(date) }
+            withContext(Dispatchers.Main) {
+                if (!isAdded || view == null) return@withContext
+                if (dayData.eventTypeMarkers.isEmpty() && dayData.customEventCount == 0) {
+                    markerCache.remove(date)
+                } else {
+                    markerCache[date] = dayData
+                }
+                adapter.notifyDateChanged(date)
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("CalendarFragment", "Error refreshing day marker", e)
         }
     }
 

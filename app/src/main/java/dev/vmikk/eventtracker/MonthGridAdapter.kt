@@ -88,6 +88,16 @@ class MonthGridAdapter(
     }
 
     /**
+     * Notifies that a specific date cell has changed, if visible in the grid.
+     */
+    fun notifyDateChanged(date: LocalDate) {
+        val index = cells.indexOf(date)
+        if (index >= 0) {
+            notifyItemChanged(index)
+        }
+    }
+
+    /**
      * Notifies that all cells need to be updated (e.g., when layout properties change).
      * More efficient than notifyDataSetChanged() as it uses a range notification.
      */

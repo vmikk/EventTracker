@@ -8,14 +8,14 @@
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="16dp">
+        android:padding="@dimen/screen_padding">
 
         <TextView
             android:id="@+id/event_types_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/event_types"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textAppearance="@style/TextAppearance.EventTracker.SectionTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
@@ -23,6 +23,7 @@
             android:id="@+id/add_event_type"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:minHeight="@dimen/list_item_min_height"
             android:text="@string/add_event_type"
             app:layout_constraintBaseline_toBaselineOf="@id/event_types_title"
             app:layout_constraintEnd_toEndOf="parent" />
@@ -32,6 +33,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:clipToPadding="false"
+            android:paddingTop="@dimen/section_spacing_small"
             android:paddingBottom="24dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
@@ -41,8 +43,8 @@
             android:id="@+id/divider1"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:background="?android:attr/listDivider"
+            android:layout_marginTop="@dimen/section_spacing"
+            android:background="?attr/colorOutlineVariant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/event_type_list" />
@@ -51,9 +53,9 @@
             android:id="@+id/calendar_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="@dimen/section_spacing"
             android:text="@string/calendar"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textAppearance="@style/TextAppearance.EventTracker.SectionTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider1" />
 
@@ -61,7 +63,8 @@
             android:id="@+id/calendar_max_markers"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/section_spacing_small"
+            android:minHeight="@dimen/list_item_min_height"
             android:text="@string/calendar_max_markers"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/calendar_title" />
@@ -70,8 +73,8 @@
             android:id="@+id/divider_calendar"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:background="?android:attr/listDivider"
+            android:layout_marginTop="@dimen/section_spacing"
+            android:background="?attr/colorOutlineVariant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/calendar_max_markers" />
@@ -80,9 +83,9 @@
             android:id="@+id/export_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="@dimen/section_spacing"
             android:text="@string/export"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textAppearance="@style/TextAppearance.EventTracker.SectionTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider_calendar" />
 
@@ -90,7 +93,8 @@
             android:id="@+id/export_tsv"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/section_spacing_small"
+            android:minHeight="@dimen/list_item_min_height"
             android:text="@string/export_tsv"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/export_title" />
@@ -99,8 +103,8 @@
             android:id="@+id/divider2"
             android:layout_width="0dp"
             android:layout_height="1dp"
-            android:layout_marginTop="16dp"
-            android:background="?android:attr/listDivider"
+            android:layout_marginTop="@dimen/section_spacing"
+            android:background="?attr/colorOutlineVariant"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/export_tsv" />
@@ -109,9 +113,9 @@
             android:id="@+id/backups_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="@dimen/section_spacing"
             android:text="@string/backups"
-            android:textAppearance="?attr/textAppearanceTitleMedium"
+            android:textAppearance="@style/TextAppearance.EventTracker.SectionTitle"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/divider2" />
 
@@ -119,7 +123,8 @@
             android:id="@+id/connect_dropbox"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/section_spacing_small"
+            android:minHeight="@dimen/list_item_min_height"
             android:text="@string/connect_dropbox"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/backups_title" />
@@ -128,7 +133,8 @@
             android:id="@+id/backup_now"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/section_spacing_small"
+            android:minHeight="@dimen/list_item_min_height"
             android:text="@string/backup_now"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/connect_dropbox" />
@@ -137,7 +143,8 @@
             android:id="@+id/restore_latest"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/section_spacing_small"
+            android:minHeight="@dimen/list_item_min_height"
             android:text="@string/restore_latest"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/backup_now" />
@@ -146,7 +153,7 @@
             android:id="@+id/daily_backup_switch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/section_spacing_small"
             android:text="@string/daily_backup"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@id/restore_latest" />

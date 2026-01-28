@@ -6,4 +6,12 @@
     </style>
 
     <style name="Theme.EventTracker" parent="Base.Theme.EventTracker" />
+
+    <style name="TextAppearance.EventTracker.SectionTitle" parent="TextAppearance.Material3.TitleMedium">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
+
+    <style name="TextAppearance.EventTracker.ListLabel" parent="TextAppearance.Material3.BodyMedium">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+    </style>
 </resources>

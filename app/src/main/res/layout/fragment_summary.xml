@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="12dp">
+    android:padding="@dimen/screen_padding">
 
     <com.google.android.material.button.MaterialButtonToggleGroup
         android:id="@+id/period_toggle"
@@ -38,8 +38,8 @@
 
     <ImageButton
         android:id="@+id/prev_period"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="@dimen/icon_button_size"
+        android:layout_height="@dimen/icon_button_size"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/previous_period"
         android:src="@android:drawable/ic_media_previous"
@@ -53,7 +53,7 @@
         android:ellipsize="end"
         android:gravity="center"
         android:maxLines="1"
-        android:textAppearance="?attr/textAppearanceTitleMedium"
+        android:textAppearance="?attr/textAppearanceTitleLarge"
         app:layout_constraintBottom_toBottomOf="@id/prev_period"
         app:layout_constraintEnd_toStartOf="@id/next_period"
         app:layout_constraintStart_toEndOf="@id/prev_period"
@@ -61,8 +61,8 @@
 
     <ImageButton
         android:id="@+id/next_period"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="@dimen/icon_button_size"
+        android:layout_height="@dimen/icon_button_size"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/next_period"
         android:src="@android:drawable/ic_media_next"
@@ -74,6 +74,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="gone"
+        android:layout_marginTop="@dimen/section_spacing_small"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/prev_period" />
@@ -83,8 +84,8 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
+        android:paddingTop="@dimen/list_vertical_padding"
+        android:paddingBottom="@dimen/list_vertical_padding"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -97,6 +98,7 @@
         android:orientation="vertical"
         android:gravity="center"
         android:visibility="gone"
+        android:padding="@dimen/section_spacing_small"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

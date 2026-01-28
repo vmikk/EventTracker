@@ -165,6 +165,26 @@ class EventRepository(
     suspend fun listCustomEventsOnce(date: LocalDate): List<CustomEventEntity> =
         db.customEventDao().listByDateOnce(date.toEpochDay())
 
+    suspend fun getDayMarkers(date: LocalDate): DayCellData {
+        val eventTypes = db.eventTypeDao().getActiveOnce().associateBy { it.id }
+        val dayEvents = db.dayEventDao().getByDateOnce(date.toEpochDay())
+        val customEvents = db.customEventDao().listByDateOnce(date.toEpochDay())
+
+        val eventTypeMarkers: List<DayMarker> = dayEvents.mapNotNull { ev ->
+            val type = eventTypes[ev.eventTypeId] ?: return@mapNotNull null
+            DayMarker(
+                colorArgb = type.colorArgb,
+                emoji = type.emoji,
+                isNegated = ev.state == DayEventEntity.STATE_NEGATED,
+            )
+        }
+
+        return DayCellData(
+            eventTypeMarkers = eventTypeMarkers,
+            customEventCount = customEvents.size,
+        )
+    }
+
     suspend fun getMonthMarkers(month: YearMonth): Map<LocalDate, DayCellData> {
         val start = month.atDay(1)
         val end = month.atEndOfMonth()
