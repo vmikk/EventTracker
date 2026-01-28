@@ -10,23 +10,31 @@
         android:layout_height="wrap_content"
         android:padding="@dimen/screen_padding">
 
-        <TextView
-            android:id="@+id/event_types_title"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:id="@+id/event_types_header"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:text="@string/event_types"
-            android:textAppearance="@style/TextAppearance.EventTracker.SectionTitle"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+            app:layout_constraintTop_toTopOf="parent">
 
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/add_event_type"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:minHeight="@dimen/list_item_min_height"
-            android:text="@string/add_event_type"
-            app:layout_constraintBaseline_toBaselineOf="@id/event_types_title"
-            app:layout_constraintEnd_toEndOf="parent" />
+            <TextView
+                android:id="@+id/event_types_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/event_types"
+                android:textAppearance="@style/TextAppearance.EventTracker.SectionTitle" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/add_event_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="@dimen/list_item_min_height"
+                android:text="@string/add_event_type" />
+        </LinearLayout>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/event_type_list"
@@ -37,7 +45,7 @@
             android:paddingBottom="24dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/event_types_title" />
+            app:layout_constraintTop_toBottomOf="@id/event_types_header" />
 
         <View
             android:id="@+id/divider1"
